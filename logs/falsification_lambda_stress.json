@@ -1,0 +1,104 @@
+{
+  "experiment": "lambda_false_positive_stress",
+  "purpose": "测试 Lambda 的高斯单峰零假设在非高斯单峰分布上的假阳性率",
+  "params": {
+    "N_REP": 20,
+    "N_SAMP": 200,
+    "N_NULL": 49,
+    "KMAX": 5,
+    "ALPHA": 0.05
+  },
+  "criteria": {
+    "FAIL_FPR": 0.2,
+    "FAIL_TPR": 0.8
+  },
+  "unimodal": {
+    "gauss": {
+      "K>=2_rate": 0.0,
+      "K_mean": 1.0,
+      "lambda_mean": 0.0,
+      "n_rep": 20,
+      "sec_per_call": 0.6202513217926026
+    },
+    "t_df3": {
+      "K>=2_rate": 0.0,
+      "K_mean": 1.0,
+      "lambda_mean": 0.0,
+      "n_rep": 20,
+      "sec_per_call": 0.7096171021461487
+    },
+    "t_df5": {
+      "K>=2_rate": 0.0,
+      "K_mean": 1.0,
+      "lambda_mean": 0.0,
+      "n_rep": 20,
+      "sec_per_call": 0.7342462301254272
+    },
+    "laplace": {
+      "K>=2_rate": 0.0,
+      "K_mean": 1.0,
+      "lambda_mean": 0.0,
+      "n_rep": 20,
+      "sec_per_call": 0.7267813205718994
+    },
+    "uniform_ball": {
+      "K>=2_rate": 1.0,
+      "K_mean": 4.45,
+      "lambda_mean": 1.4923728589095513,
+      "n_rep": 20,
+      "sec_per_call": 0.7811699867248535
+    },
+    "banana": {
+      "K>=2_rate": 0.95,
+      "K_mean": 4.8,
+      "lambda_mean": 1.4787159531611844,
+      "n_rep": 20,
+      "sec_per_call": 0.6927193880081177
+    },
+    "lognorm": {
+      "K>=2_rate": 0.85,
+      "K_mean": 4.05,
+      "lambda_mean": 1.1245397085716697,
+      "n_rep": 20,
+      "sec_per_call": 0.7004354596138
+    },
+    "exp_skew": {
+      "K>=2_rate": 1.0,
+      "K_mean": 4.15,
+      "lambda_mean": 1.4055905687247026,
+      "n_rep": 20,
+      "sec_per_call": 0.6605920791625977
+    },
+    "hetero": {
+      "K>=2_rate": 0.05,
+      "K_mean": 1.2,
+      "lambda_mean": 0.074129804878027,
+      "n_rep": 20,
+      "sec_per_call": 0.6559458374977112
+    }
+  },
+  "multimodal": {
+    "two_modes": {
+      "K>=2_rate": 1.0,
+      "K_mean": 2.0,
+      "lambda_mean": 14.201821741443506,
+      "n_rep": 20,
+      "sec_per_call": 0.633438789844513
+    },
+    "ring8": {
+      "K>=2_rate": 1.0,
+      "K_mean": 4.75,
+      "lambda_mean": 1.906046305033831,
+      "n_rep": 20,
+      "sec_per_call": 0.6753659963607788
+    }
+  },
+  "false_positive_failures": {
+    "uniform_ball": 1.0,
+    "banana": 0.95,
+    "lognorm": 0.85,
+    "exp_skew": 1.0
+  },
+  "power_failures": {},
+  "verdict": "FAIL"
+}

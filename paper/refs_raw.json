@@ -1,0 +1,795 @@
+[
+ {
+  "id": "1706.08500",
+  "title": "GANs Trained by a Two Time-Scale Update Rule Converge to a Local Nash Equilibrium",
+  "authors": [
+   "Heusel, Martin",
+   "Ramsauer, Hubert",
+   "Unterthiner, Thomas",
+   "Nessler, Bernhard",
+   "Hochreiter, Sepp"
+  ],
+  "date": "2017/06/26",
+  "summary": "Generative Adversarial Networks (GANs) excel at creating realistic images with complex models for which maximum likelihood is infeasible. However, the convergence of GAN training has still not been proved. We propose a two time-scale update rule (TTUR) for training GANs with stochastic gradient descent on arbitrary GAN loss functions. TTUR has an individual learning rate for both the discriminator and the generator. Using the theory of stochastic approximation, we prove that the TTUR converges under mild assumptions to a stationary local Nash equilibrium. The convergence carries over to the popular Adam optimization, for which we prove that it follows the dynamics of a heavy ball with friction and thus prefers flat minima in the objective landscape. For the evaluation of the performance of GANs at image generation, we introduce the &#34;Fréchet Inception Distance&#34; (FID) which captures the similarity of generated images to real ones better than the Inception Score. In experiments, TTUR improves learning for DCGANs and Improved Wasserstein GANs (WGAN-GP) outperforming conventional GAN training on CelebA, CIFAR-10, SVHN, LSUN Bedrooms, and the One Billion Word Benchmark.",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "Implementations are available at: this https URL",
+  "jref": "Advances in Neural Information Processing Systems 30 (NIPS 2017)",
+  "key": "fid",
+  "expect": "GANs Trained by a Two Time-Scale Update Rule"
+ },
+ {
+  "id": "1902.00434",
+  "title": "Generalized Sliced Wasserstein Distances",
+  "authors": [
+   "Kolouri, Soheil",
+   "Nadjahi, Kimia",
+   "Simsekli, Umut",
+   "Badeau, Roland",
+   "Rohde, Gustavo K."
+  ],
+  "date": "2019/02/01",
+  "summary": "The Wasserstein distance and its variations, e.g., the sliced-Wasserstein (SW) distance, have recently drawn attention from the machine learning community. The SW distance, specifically, was shown to have similar properties to the Wasserstein distance, while being much simpler to compute, and is therefore used in various applications including generative modeling and general supervised/unsupervised learning. In this paper, we first clarify the mathematical connection between the SW distance and the Radon transform. We then utilize the generalized Radon transform to define a new family of distances for probability measures, which we call generalized sliced-Wasserstein (GSW) distances. We also show that, similar to the SW distance, the GSW distance can be extended to a maximum GSW (max-GSW) distance. We then provide the conditions under which GSW and max-GSW distances are indeed distances. Finally, we compare the numerical performance of the proposed distances on several generative modeling tasks, including SW flows and SW auto-encoders.",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "",
+  "jref": "",
+  "key": "gsw",
+  "expect": "Generalized Sliced Wasserstein Distances"
+ },
+ {
+  "id": "1904.06991",
+  "title": "Improved Precision and Recall Metric for Assessing Generative Models",
+  "authors": [
+   "Kynkäänniemi, Tuomas",
+   "Karras, Tero",
+   "Laine, Samuli",
+   "Lehtinen, Jaakko",
+   "Aila, Timo"
+  ],
+  "date": "2019/04/15",
+  "summary": "The ability to automatically estimate the quality and coverage of the samples produced by a generative model is a vital requirement for driving algorithm research. We present an evaluation metric that can separately and reliably measure both of these aspects in image generation tasks by forming explicit, non-parametric representations of the manifolds of real and generated data. We demonstrate the effectiveness of our metric in StyleGAN and BigGAN by providing several illustrative examples where existing metrics yield uninformative or contradictory results. Furthermore, we analyze multiple design variants of StyleGAN to better understand the relationships between the model architecture, training methods, and the properties of the resulting sample distribution. In the process, we identify new variants that improve the state-of-the-art. We also perform the first principled analysis of truncation methods and identify an improved method. Finally, we extend our metric to estimate the perceptual quality of individual samples, and use this to study latent space interpolations.",
+  "subject": "Machine Learning (stat.ML)",
+  "comments": "NeurIPS 2019 final version",
+  "jref": "",
+  "key": "prdc",
+  "expect": "Improved Precision and Recall Metric"
+ },
+ {
+  "id": "2004.07219",
+  "title": "D4RL: Datasets for Deep Data-Driven Reinforcement Learning",
+  "authors": [
+   "Fu, Justin",
+   "Kumar, Aviral",
+   "Nachum, Ofir",
+   "Tucker, George",
+   "Levine, Sergey"
+  ],
+  "date": "2020/04/15",
+  "summary": "The offline reinforcement learning (RL) setting (also known as full batch RL), where a policy is learned from a static dataset, is compelling as progress enables RL methods to take advantage of large, previously-collected datasets, much like how the rise of large datasets has fueled results in supervised learning. However, existing online RL benchmarks are not tailored towards the offline setting and existing offline RL benchmarks are restricted to data generated by partially-trained agents, making progress in offline RL difficult to measure. In this work, we introduce benchmarks specifically designed for the offline setting, guided by key properties of datasets relevant to real-world applications of offline RL. With a focus on dataset collection, examples of such properties include: datasets generated via hand-designed controllers and human demonstrators, multitask datasets where an agent performs different tasks in the same environment, and datasets collected with mixtures of policies. By moving beyond simple benchmark tasks and data collected by partially-trained RL agents, we reveal important and unappreciated deficiencies of existing algorithms. To facilitate research, we have released our benchmark tasks and datasets with a comprehensive evaluation of existing algorithms, an evaluation protocol, and open-source examples. This serves as a common starting point for the community to identify shortcomings in existing offline RL methods and a collaborative route for progress in this emerging area.",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "Website available at this https URL",
+  "jref": "",
+  "key": "d4rl",
+  "expect": "D4RL datasets"
+ },
+ {
+  "id": "2006.04779",
+  "title": "Conservative Q-Learning for Offline Reinforcement Learning",
+  "authors": [
+   "Kumar, Aviral",
+   "Zhou, Aurick",
+   "Tucker, George",
+   "Levine, Sergey"
+  ],
+  "date": "2020/06/08",
+  "summary": "Effectively leveraging large, previously collected datasets in reinforcement learning (RL) is a key challenge for large-scale real-world applications. Offline RL algorithms promise to learn effective policies from previously-collected, static datasets without further interaction. However, in practice, offline RL presents a major challenge, and standard off-policy RL methods can fail due to overestimation of values induced by the distributional shift between the dataset and the learned policy, especially when training on complex and multi-modal data distributions. In this paper, we propose conservative Q-learning (CQL), which aims to address these limitations by learning a conservative Q-function such that the expected value of a policy under this Q-function lower-bounds its true value. We theoretically show that CQL produces a lower bound on the value of the current policy and that it can be incorporated into a policy learning procedure with theoretical improvement guarantees. In practice, CQL augments the standard Bellman error objective with a simple Q-value regularizer which is straightforward to implement on top of existing deep Q-learning and actor-critic implementations. On both discrete and continuous control domains, we show that CQL substantially outperforms existing offline RL methods, often learning policies that attain 2-5 times higher final return, especially when learning from complex and multi-modal data distributions.",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "Preprint. Website at: this https URL",
+  "jref": "",
+  "key": "cql",
+  "expect": "Conservative Q-Learning"
+ },
+ {
+  "id": "2006.11239",
+  "title": "Denoising Diffusion Probabilistic Models",
+  "authors": [
+   "Ho, Jonathan",
+   "Jain, Ajay",
+   "Abbeel, Pieter"
+  ],
+  "date": "2020/06/19",
+  "summary": "We present high quality image synthesis results using diffusion probabilistic models, a class of latent variable models inspired by considerations from nonequilibrium thermodynamics. Our best results are obtained by training on a weighted variational bound designed according to a novel connection between diffusion probabilistic models and denoising score matching with Langevin dynamics, and our models naturally admit a progressive lossy decompression scheme that can be interpreted as a generalization of autoregressive decoding. On the unconditional CIFAR10 dataset, we obtain an Inception score of 9.46 and a state-of-the-art FID score of 3.17. On 256x256 LSUN, we obtain sample quality similar to ProgressiveGAN. Our implementation is available at this https URL",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "",
+  "jref": "",
+  "key": "ddpm",
+  "expect": "Denoising Diffusion Probabilistic Models"
+ },
+ {
+  "id": "2010.02502",
+  "title": "Denoising Diffusion Implicit Models",
+  "authors": [
+   "Song, Jiaming",
+   "Meng, Chenlin",
+   "Ermon, Stefano"
+  ],
+  "date": "2020/10/06",
+  "summary": "Denoising diffusion probabilistic models (DDPMs) have achieved high quality image generation without adversarial training, yet they require simulating a Markov chain for many steps to produce a sample. To accelerate sampling, we present denoising diffusion implicit models (DDIMs), a more efficient class of iterative implicit probabilistic models with the same training procedure as DDPMs. In DDPMs, the generative process is defined as the reverse of a Markovian diffusion process. We construct a class of non-Markovian diffusion processes that lead to the same training objective, but whose reverse process can be much faster to sample from. We empirically demonstrate that DDIMs can produce high quality samples $10 \\times$ to $50 \\times$ faster in terms of wall-clock time compared to DDPMs, allow us to trade off computation for sample quality, and can perform semantically meaningful image interpolation directly in the latent space.",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "ICLR 2021; updated connections with ODEs at page 6, fixed some typos in the proof",
+  "jref": "",
+  "key": "ddim",
+  "expect": "Denoising Diffusion Implicit Models"
+ },
+ {
+  "id": "2011.13456",
+  "title": "Score-Based Generative Modeling through Stochastic Differential Equations",
+  "authors": [
+   "Song, Yang",
+   "Sohl-Dickstein, Jascha",
+   "Kingma, Diederik P.",
+   "Kumar, Abhishek",
+   "Ermon, Stefano",
+   "Poole, Ben"
+  ],
+  "date": "2020/11/26",
+  "summary": "Creating noise from data is easy; creating data from noise is generative modeling. We present a stochastic differential equation (SDE) that smoothly transforms a complex data distribution to a known prior distribution by slowly injecting noise, and a corresponding reverse-time SDE that transforms the prior distribution back into the data distribution by slowly removing the noise. Crucially, the reverse-time SDE depends only on the time-dependent gradient field (\\aka, score) of the perturbed data distribution. By leveraging advances in score-based generative modeling, we can accurately estimate these scores with neural networks, and use numerical SDE solvers to generate samples. We show that this framework encapsulates previous approaches in score-based generative modeling and diffusion probabilistic modeling, allowing for new sampling procedures and new modeling capabilities. In particular, we introduce a predictor-corrector framework to correct errors in the evolution of the discretized reverse-time SDE. We also derive an equivalent neural ODE that samples from the same distribution as the SDE, but additionally enables exact likelihood computation, and improved sampling efficiency. In addition, we provide a new way to solve inverse problems with score-based models, as demonstrated with experiments on class-conditional generation, image inpainting, and colorization. Combined with multiple architectural improvements, we achieve record-breaking performance for unconditional image generation on CIFAR-10 with an Inception score of 9.89 and FID of 2.20, a competitive likelihood of 2.99 bits/dim, and demonstrate high fidelity generation of 1024 x 1024 images for the first time from a score-based generative model.",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "ICLR 2021 (Oral)",
+  "jref": "",
+  "key": "scoresde",
+  "expect": "Score-Based Generative Modeling through SDEs"
+ },
+ {
+  "id": "2108.13264",
+  "title": "Deep Reinforcement Learning at the Edge of the Statistical Precipice",
+  "authors": [
+   "Agarwal, Rishabh",
+   "Schwarzer, Max",
+   "Castro, Pablo Samuel",
+   "Courville, Aaron",
+   "Bellemare, Marc G."
+  ],
+  "date": "2021/08/30",
+  "summary": "Deep reinforcement learning (RL) algorithms are predominantly evaluated by comparing their relative performance on a large suite of tasks. Most published results on deep RL benchmarks compare point estimates of aggregate performance such as mean and median scores across tasks, ignoring the statistical uncertainty implied by the use of a finite number of training runs. Beginning with the Arcade Learning Environment (ALE), the shift towards computationally-demanding benchmarks has led to the practice of evaluating only a small number of runs per task, exacerbating the statistical uncertainty in point estimates. In this paper, we argue that reliable evaluation in the few run deep RL regime cannot ignore the uncertainty in results without running the risk of slowing down progress in the field. We illustrate this point using a case study on the Atari 100k benchmark, where we find substantial discrepancies between conclusions drawn from point estimates alone versus a more thorough statistical analysis. With the aim of increasing the field&#39;s confidence in reported results with a handful of runs, we advocate for reporting interval estimates of aggregate performance and propose performance profiles to account for the variability in results, as well as present more robust and efficient aggregate metrics, such as interquartile mean scores, to achieve small uncertainty in results. Using such statistical tools, we scrutinize performance evaluations of existing algorithms on other widely used RL benchmarks including the ALE, Procgen, and the DeepMind Control Suite, again revealing discrepancies in prior comparisons. Our findings call for a change in how we evaluate performance in deep RL, for which we present a more rigorous evaluation methodology, accompanied with an open-source library rliable, to prevent unreliable results from stagnating the field.",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "Outstanding Paper Award at NeurIPS 2021. Website: this https URL . 28 Pages, 33 Figures",
+  "jref": "",
+  "key": "precipice",
+  "expect": "Deep RL at the Edge of the Statistical Precipice"
+ },
+ {
+  "id": "2110.06169",
+  "title": "Offline Reinforcement Learning with Implicit Q-Learning",
+  "authors": [
+   "Kostrikov, Ilya",
+   "Nair, Ashvin",
+   "Levine, Sergey"
+  ],
+  "date": "2021/10/12",
+  "summary": "Offline reinforcement learning requires reconciling two conflicting aims: learning a policy that improves over the behavior policy that collected the dataset, while at the same time minimizing the deviation from the behavior policy so as to avoid errors due to distributional shift. This trade-off is critical, because most current offline reinforcement learning methods need to query the value of unseen actions during training to improve the policy, and therefore need to either constrain these actions to be in-distribution, or else regularize their values. We propose an offline RL method that never needs to evaluate actions outside of the dataset, but still enables the learned policy to improve substantially over the best behavior in the data through generalization. The main insight in our work is that, instead of evaluating unseen actions from the latest policy, we can approximate the policy improvement step implicitly by treating the state value function as a random variable, with randomness determined by the action (while still integrating over the dynamics to avoid excessive optimism), and then taking a state conditional upper expectile of this random variable to estimate the value of the best actions in that state. This leverages the generalization capacity of the function approximator to estimate the value of the best available action at a given state without ever directly querying a Q-function with this unseen action. Our algorithm alternates between fitting this upper expectile value function and backing it up into a Q-function. Then, we extract the policy via advantage-weighted behavioral cloning. We dub our method implicit Q-learning (IQL). IQL demonstrates the state-of-the-art performance on D4RL, a standard benchmark for offline reinforcement learning. We also demonstrate that IQL achieves strong performance fine-tuning using online interaction after offline initialization.",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "",
+  "jref": "",
+  "key": "iql",
+  "expect": "Offline Reinforcement Learning with Implicit Q-Learning"
+ },
+ {
+  "id": "2202.00512",
+  "title": "Progressive Distillation for Fast Sampling of Diffusion Models",
+  "authors": [
+   "Salimans, Tim",
+   "Ho, Jonathan"
+  ],
+  "date": "2022/02/01",
+  "summary": "Diffusion models have recently shown great promise for generative modeling, outperforming GANs on perceptual quality and autoregressive models at density estimation. A remaining downside is their slow sampling time: generating high quality samples takes many hundreds or thousands of model evaluations. Here we make two contributions to help eliminate this downside: First, we present new parameterizations of diffusion models that provide increased stability when using few sampling steps. Second, we present a method to distill a trained deterministic diffusion sampler, using many steps, into a new diffusion model that takes half as many sampling steps. We then keep progressively applying this distillation procedure to our model, halving the number of required sampling steps each time. On standard image generation benchmarks like CIFAR-10, ImageNet, and LSUN, we start out with state-of-the-art samplers taking as many as 8192 steps, and are able to distill down to models taking as few as 4 steps without losing much perceptual quality; achieving, for example, a FID of 3.0 on CIFAR-10 in 4 steps. Finally, we show that the full progressive distillation procedure does not take more time than it takes to train the original model, thus representing an efficient solution for generative modeling using diffusion at both train and test time.",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "Published as a conference paper at ICLR 2022",
+  "jref": "",
+  "key": "progressivedistill",
+  "expect": "Progressive Distillation for Fast Sampling"
+ },
+ {
+  "id": "2206.00364",
+  "title": "Elucidating the Design Space of Diffusion-Based Generative Models",
+  "authors": [
+   "Karras, Tero",
+   "Aittala, Miika",
+   "Aila, Timo",
+   "Laine, Samuli"
+  ],
+  "date": "2022/06/01",
+  "summary": "We argue that the theory and practice of diffusion-based generative models are currently unnecessarily convoluted and seek to remedy the situation by presenting a design space that clearly separates the concrete design choices. This lets us identify several changes to both the sampling and training processes, as well as preconditioning of the score networks. Together, our improvements yield new state-of-the-art FID of 1.79 for CIFAR-10 in a class-conditional setting and 1.97 in an unconditional setting, with much faster sampling (35 network evaluations per image) than prior designs. To further demonstrate their modular nature, we show that our design changes dramatically improve both the efficiency and quality obtainable with pre-trained score networks from previous work, including improving the FID of a previously trained ImageNet-64 model from 2.07 to near-SOTA 1.55, and after re-training with our proposed improvements to a new SOTA of 1.36.",
+  "subject": "Computer Vision and Pattern Recognition (cs.CV)",
+  "comments": "NeurIPS 2022",
+  "jref": "",
+  "key": "edm",
+  "expect": "Elucidating the Design Space of Diffusion-Based Generative Models"
+ },
+ {
+  "id": "2208.06193",
+  "title": "Diffusion Policies as an Expressive Policy Class for Offline Reinforcement Learning",
+  "authors": [
+   "Wang, Zhendong",
+   "Hunt, Jonathan J",
+   "Zhou, Mingyuan"
+  ],
+  "date": "2022/08/12",
+  "summary": "Offline reinforcement learning (RL), which aims to learn an optimal policy using a previously collected static dataset, is an important paradigm of RL. Standard RL methods often perform poorly in this regime due to the function approximation errors on out-of-distribution actions. While a variety of regularization methods have been proposed to mitigate this issue, they are often constrained by policy classes with limited expressiveness that can lead to highly suboptimal solutions. In this paper, we propose representing the policy as a diffusion model, a recent class of highly-expressive deep generative models. We introduce Diffusion Q-learning (Diffusion-QL) that utilizes a conditional diffusion model to represent the policy. In our approach, we learn an action-value function and we add a term maximizing action-values into the training loss of the conditional diffusion model, which results in a loss that seeks optimal actions that are near the behavior policy. We show the expressiveness of the diffusion model-based policy, and the coupling of the behavior cloning and policy improvement under the diffusion model both contribute to the outstanding performance of Diffusion-QL. We illustrate the superiority of our method compared to prior works in a simple 2D bandit example with a multimodal behavior policy. We then show that our method can achieve state-of-the-art performance on the majority of the D4RL benchmark tasks.",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "ICLR 2023",
+  "jref": "",
+  "key": "diffusionql",
+  "expect": "Diffusion Policies as an Expressive Policy Class"
+ },
+ {
+  "id": "2209.03003",
+  "title": "Flow Straight and Fast: Learning to Generate and Transfer Data with Rectified Flow",
+  "authors": [
+   "Liu, Xingchao",
+   "Gong, Chengyue",
+   "Liu, Qiang"
+  ],
+  "date": "2022/09/07",
+  "summary": "We present rectified flow, a surprisingly simple approach to learning (neural) ordinary differential equation (ODE) models to transport between two empirically observed distributions \\pi_0 and \\pi_1, hence providing a unified solution to generative modeling and domain transfer, among various other tasks involving distribution transport. The idea of rectified flow is to learn the ODE to follow the straight paths connecting the points drawn from \\pi_0 and \\pi_1 as much as possible. This is achieved by solving a straightforward nonlinear least squares optimization problem, which can be easily scaled to large models without introducing extra parameters beyond standard supervised learning. The straight paths are special and preferred because they are the shortest paths between two points, and can be simulated exactly without time discretization and hence yield computationally efficient models. We show that the procedure of learning a rectified flow from data, called rectification, turns an arbitrary coupling of \\pi_0 and \\pi_1 to a new deterministic coupling with provably non-increasing convex transport costs. In addition, recursively applying rectification allows us to obtain a sequence of flows with increasingly straight paths, which can be simulated accurately with coarse time discretization in the inference phase. In empirical studies, we show that rectified flow performs superbly on image generation, image-to-image translation, and domain adaptation. In particular, on image generation and translation, our method yields nearly straight flows that give high quality results even with a single Euler discretization step.",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "",
+  "jref": "",
+  "key": "rectifiedflow",
+  "expect": "Flow Straight and Fast"
+ },
+ {
+  "id": "2210.02747",
+  "title": "Flow Matching for Generative Modeling",
+  "authors": [
+   "Lipman, Yaron",
+   "Chen, Ricky T. Q.",
+   "Ben-Hamu, Heli",
+   "Nickel, Maximilian",
+   "Le, Matt"
+  ],
+  "date": "2022/10/06",
+  "summary": "We introduce a new paradigm for generative modeling built on Continuous Normalizing Flows (CNFs), allowing us to train CNFs at unprecedented scale. Specifically, we present the notion of Flow Matching (FM), a simulation-free approach for training CNFs based on regressing vector fields of fixed conditional probability paths. Flow Matching is compatible with a general family of Gaussian probability paths for transforming between noise and data samples -- which subsumes existing diffusion paths as specific instances. Interestingly, we find that employing FM with diffusion paths results in a more robust and stable alternative for training diffusion models. Furthermore, Flow Matching opens the door to training CNFs with other, non-diffusion probability paths. An instance of particular interest is using Optimal Transport (OT) displacement interpolation to define the conditional probability paths. These paths are more efficient than diffusion paths, provide faster training and sampling, and result in better generalization. Training CNFs using Flow Matching on ImageNet leads to consistently better performance than alternative diffusion-based methods in terms of both likelihood and sample quality, and allows fast and reliable sample generation using off-the-shelf numerical ODE solvers.",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "",
+  "jref": "",
+  "key": "flowmatching",
+  "expect": "Flow Matching for Generative Modeling"
+ },
+ {
+  "id": "2302.00482",
+  "title": "Improving and generalizing flow-based generative models with minibatch optimal transport",
+  "authors": [
+   "Tong, Alexander",
+   "Fatras, Kilian",
+   "Malkin, Nikolay",
+   "Huguet, Guillaume",
+   "Zhang, Yanlei",
+   "Rector-Brooks, Jarrid",
+   "Wolf, Guy",
+   "Bengio, Yoshua"
+  ],
+  "date": "2023/02/01",
+  "summary": "Continuous normalizing flows (CNFs) are an attractive generative modeling technique, but they have been held back by limitations in their simulation-based maximum likelihood training. We introduce the generalized conditional flow matching (CFM) technique, a family of simulation-free training objectives for CNFs. CFM features a stable regression objective like that used to train the stochastic flow in diffusion models but enjoys the efficient inference of deterministic flow models. In contrast to both diffusion models and prior CNF training algorithms, CFM does not require the source distribution to be Gaussian or require evaluation of its density. A variant of our objective is optimal transport CFM (OT-CFM), which creates simpler flows that are more stable to train and lead to faster inference, as evaluated in our experiments. Furthermore, we show that when the true OT plan is available, our OT-CFM method approximates dynamic OT. Training CNFs with CFM improves results on a variety of conditional and unconditional generation tasks, such as inferring single cell dynamics, unsupervised image translation, and Schrödinger bridge inference.",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "TMLR. Code: this https URL",
+  "jref": "",
+  "key": "cfm",
+  "expect": "Conditional Flow Matching Simulation-Free Dynamic Optimal Transport"
+ },
+ {
+  "id": "2303.01469",
+  "title": "Consistency Models",
+  "authors": [
+   "Song, Yang",
+   "Dhariwal, Prafulla",
+   "Chen, Mark",
+   "Sutskever, Ilya"
+  ],
+  "date": "2023/03/02",
+  "summary": "Diffusion models have significantly advanced the fields of image, audio, and video generation, but they depend on an iterative sampling process that causes slow generation. To overcome this limitation, we propose consistency models, a new family of models that generate high quality samples by directly mapping noise to data. They support fast one-step generation by design, while still allowing multistep sampling to trade compute for sample quality. They also support zero-shot data editing, such as image inpainting, colorization, and super-resolution, without requiring explicit training on these tasks. Consistency models can be trained either by distilling pre-trained diffusion models, or as standalone generative models altogether. Through extensive experiments, we demonstrate that they outperform existing distillation techniques for diffusion models in one- and few-step sampling, achieving the new state-of-the-art FID of 3.55 on CIFAR-10 and 6.20 on ImageNet 64x64 for one-step generation. When trained in isolation, consistency models become a new family of generative models that can outperform existing one-step, non-adversarial generative models on standard benchmarks such as CIFAR-10, ImageNet 64x64 and LSUN 256x256.",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "ICML 2023",
+  "jref": "",
+  "key": "consistencymodels",
+  "expect": "Consistency Models"
+ },
+ {
+  "id": "2303.04137",
+  "title": "Diffusion Policy: Visuomotor Policy Learning via Action Diffusion",
+  "authors": [
+   "Chi, Cheng",
+   "Xu, Zhenjia",
+   "Feng, Siyuan",
+   "Cousineau, Eric",
+   "Du, Yilun",
+   "Burchfiel, Benjamin",
+   "Tedrake, Russ",
+   "Song, Shuran"
+  ],
+  "date": "2023/03/07",
+  "summary": "This paper introduces Diffusion Policy, a new way of generating robot behavior by representing a robot&#39;s visuomotor policy as a conditional denoising diffusion process. We benchmark Diffusion Policy across 12 different tasks from 4 different robot manipulation benchmarks and find that it consistently outperforms existing state-of-the-art robot learning methods with an average improvement of 46.9%. Diffusion Policy learns the gradient of the action-distribution score function and iteratively optimizes with respect to this gradient field during inference via a series of stochastic Langevin dynamics steps. We find that the diffusion formulation yields powerful advantages when used for robot policies, including gracefully handling multimodal action distributions, being suitable for high-dimensional action spaces, and exhibiting impressive training stability. To fully unlock the potential of diffusion models for visuomotor policy learning on physical robots, this paper presents a set of key technical contributions including the incorporation of receding horizon control, visual conditioning, and the time-series diffusion transformer. We hope this work will help motivate a new generation of policy learning techniques that are able to leverage the powerful generative modeling capabilities of diffusion models. Code, data, and training details is publicly available this http URL",
+  "subject": "Robotics (cs.RO)",
+  "comments": "An extended journal version of the original RSS2023 paper",
+  "jref": "",
+  "key": "diffusionpolicy",
+  "expect": "Diffusion Policy"
+ },
+ {
+  "id": "2303.08797",
+  "title": "Stochastic Interpolants: A Unifying Framework for Flows and Diffusions",
+  "authors": [
+   "Albergo, Michael S.",
+   "Boffi, Nicholas M.",
+   "Vanden-Eijnden, Eric"
+  ],
+  "date": "2023/03/15",
+  "summary": "A class of generative models that unifies flow-based and diffusion-based methods is introduced. These models extend the framework proposed in Albergo and Vanden-Eijnden (2023), enabling the use of a broad class of continuous-time stochastic processes called stochastic interpolants to bridge any two probability density functions exactly in finite time. These interpolants are built by combining data from the two prescribed densities with an additional latent variable that shapes the bridge in a flexible way. The time-dependent density function of the interpolant is shown to satisfy a transport equation as well as a family of forward and backward Fokker-Planck equations with tunable diffusion coefficient. Upon consideration of the time evolution of an individual sample, this viewpoint leads to both deterministic and stochastic generative models based on probability flow equations or stochastic differential equations with an adjustable level of noise. The drift coefficients entering these models are time-dependent velocity fields characterized as the unique minimizers of simple quadratic objective functions, one of which is a new objective for the score. We show that minimization of these quadratic objectives leads to control of the likelihood for generative models built upon stochastic dynamics, while likelihood control for deterministic dynamics is more stringent. We also construct estimators for the likelihood and the cross entropy of interpolant-based generative models, and we discuss connections with other methods such as score-based diffusion models, stochastic localization, probabilistic denoising, and rectifying flows. In addition, we demonstrate that stochastic interpolants recover the Schrödinger bridge between the two target densities when explicitly optimizing over the interpolant. Finally, algorithmic aspects are discussed and the approach is illustrated on numerical examples.",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "JMLR Version",
+  "jref": "",
+  "key": "interpolants",
+  "expect": "Stochastic Interpolants"
+ },
+ {
+  "id": "2305.18459",
+  "title": "Diffusion Model is an Effective Planner and Data Synthesizer for Multi-Task Reinforcement Learning",
+  "authors": [
+   "He, Haoran",
+   "Bai, Chenjia",
+   "Xu, Kang",
+   "Yang, Zhuoran",
+   "Zhang, Weinan",
+   "Wang, Dong",
+   "Zhao, Bin",
+   "Li, Xuelong"
+  ],
+  "date": "2023/05/29",
+  "summary": "Diffusion models have demonstrated highly-expressive generative capabilities in vision and NLP. Recent studies in reinforcement learning (RL) have shown that diffusion models are also powerful in modeling complex policies or trajectories in offline datasets. However, these works have been limited to single-task settings where a generalist agent capable of addressing multi-task predicaments is absent. In this paper, we aim to investigate the effectiveness of a single diffusion model in modeling large-scale multi-task offline data, which can be challenging due to diverse and multimodal data distribution. Specifically, we propose Multi-Task Diffusion Model (\\textsc{MTDiff}), a diffusion-based method that incorporates Transformer backbones and prompt learning for generative planning and data synthesis in multi-task offline settings. \\textsc{MTDiff} leverages vast amounts of knowledge available in multi-task data and performs implicit knowledge sharing among tasks. For generative planning, we find \\textsc{MTDiff} outperforms state-of-the-art algorithms across 50 tasks on Meta-World and 8 maps on Maze2D. For data synthesis, \\textsc{MTDiff} generates high-quality data for testing tasks given a single demonstration as a prompt, which enhances the low-quality datasets for even unseen tasks.",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "Accepted by NeurIPS 2023. 22 pages",
+  "jref": "",
+  "key": "consistencypolicy",
+  "expect": "Consistency Policy"
+ },
+ {
+  "id": "2306.03310",
+  "title": "LIBERO: Benchmarking Knowledge Transfer for Lifelong Robot Learning",
+  "authors": [
+   "Liu, Bo",
+   "Zhu, Yifeng",
+   "Gao, Chongkai",
+   "Feng, Yihao",
+   "Liu, Qiang",
+   "Zhu, Yuke",
+   "Stone, Peter"
+  ],
+  "date": "2023/06/05",
+  "summary": "Lifelong learning offers a promising paradigm of building a generalist agent that learns and adapts over its lifespan. Unlike traditional lifelong learning problems in image and text domains, which primarily involve the transfer of declarative knowledge of entities and concepts, lifelong learning in decision-making (LLDM) also necessitates the transfer of procedural knowledge, such as actions and behaviors. To advance research in LLDM, we introduce LIBERO, a novel benchmark of lifelong learning for robot manipulation. Specifically, LIBERO highlights five key research topics in LLDM: 1) how to efficiently transfer declarative knowledge, procedural knowledge, or the mixture of both; 2) how to design effective policy architectures and 3) effective algorithms for LLDM; 4) the robustness of a lifelong learner with respect to task ordering; and 5) the effect of model pretraining for LLDM. We develop an extendible procedural generation pipeline that can in principle generate infinitely many tasks. For benchmarking purpose, we create four task suites (130 tasks in total) that we use to investigate the above-mentioned research topics. To support sample-efficient learning, we provide high-quality human-teleoperated demonstration data for all tasks. Our extensive experiments present several insightful or even unexpected discoveries: sequential finetuning outperforms existing lifelong learning methods in forward transfer, no single visual encoder architecture excels at all types of knowledge transfer, and naive supervised pretraining can hinder agents&#39; performance in the subsequent LLDM. Check the website at this https URL for the code and the datasets.",
+  "subject": "Artificial Intelligence (cs.AI)",
+  "comments": "",
+  "jref": "",
+  "key": "libero",
+  "expect": "LIBERO"
+ },
+ {
+  "id": "2309.06380",
+  "title": "InstaFlow: One Step is Enough for High-Quality Diffusion-Based Text-to-Image Generation",
+  "authors": [
+   "Liu, Xingchao",
+   "Zhang, Xiwen",
+   "Ma, Jianzhu",
+   "Peng, Jian",
+   "Liu, Qiang"
+  ],
+  "date": "2023/09/12",
+  "summary": "Diffusion models have revolutionized text-to-image generation with its exceptional quality and creativity. However, its multi-step sampling process is known to be slow, often requiring tens of inference steps to obtain satisfactory results. Previous attempts to improve its sampling speed and reduce computational costs through distillation have been unsuccessful in achieving a functional one-step model. In this paper, we explore a recent method called Rectified Flow, which, thus far, has only been applied to small datasets. The core of Rectified Flow lies in its \\emph{reflow} procedure, which straightens the trajectories of probability flows, refines the coupling between noises and images, and facilitates the distillation process with student models. We propose a novel text-conditioned pipeline to turn Stable Diffusion (SD) into an ultra-fast one-step model, in which we find reflow plays a critical role in improving the assignment between noise and images. Leveraging our new pipeline, we create, to the best of our knowledge, the first one-step diffusion-based text-to-image generator with SD-level image quality, achieving an FID (Frechet Inception Distance) of $23.3$ on MS COCO 2017-5k, surpassing the previous state-of-the-art technique, progressive distillation, by a significant margin ($37.2$ $\\rightarrow$ $23.3$ in FID). By utilizing an expanded network with 1.7B parameters, we further improve the FID to $22.4$. We call our one-step models \\emph{InstaFlow}. On MS COCO 2014-30k, InstaFlow yields an FID of $13.1$ in just $0.09$ second, the best in $\\leq 0.1$ second regime, outperforming the recent StyleGAN-T ($13.9$ in $0.1$ second). Notably, the training of InstaFlow only costs 199 A100 GPU days. Codes and pre-trained models are available at \\url{ this http URL }.",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "ICLR 2024",
+  "jref": "",
+  "key": "instaflow",
+  "expect": "InstaFlow"
+ },
+ {
+  "id": "2311.18828",
+  "title": "One-step Diffusion with Distribution Matching Distillation",
+  "authors": [
+   "Yin, Tianwei",
+   "Gharbi, Michaël",
+   "Zhang, Richard",
+   "Shechtman, Eli",
+   "Durand, Fredo",
+   "Freeman, William T.",
+   "Park, Taesung"
+  ],
+  "date": "2023/11/30",
+  "summary": "Diffusion models generate high-quality images but require dozens of forward passes. We introduce Distribution Matching Distillation (DMD), a procedure to transform a diffusion model into a one-step image generator with minimal impact on image quality. We enforce the one-step image generator match the diffusion model at distribution level, by minimizing an approximate KL divergence whose gradient can be expressed as the difference between 2 score functions, one of the target distribution and the other of the synthetic distribution being produced by our one-step generator. The score functions are parameterized as two diffusion models trained separately on each distribution. Combined with a simple regression loss matching the large-scale structure of the multi-step diffusion outputs, our method outperforms all published few-step diffusion approaches, reaching 2.62 FID on ImageNet 64x64 and 11.49 FID on zero-shot COCO-30k, comparable to Stable Diffusion but orders of magnitude faster. Utilizing FP16 inference, our model generates images at 20 FPS on modern hardware.",
+  "subject": "Computer Vision and Pattern Recognition (cs.CV)",
+  "comments": "CVPR 2024, Project page: this https URL",
+  "jref": "Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) 2024",
+  "key": "dmd",
+  "expect": "One-step Diffusion with Distribution Matching Distillation"
+ },
+ {
+  "id": "2403.03206",
+  "title": "Scaling Rectified Flow Transformers for High-Resolution Image Synthesis",
+  "authors": [
+   "Esser, Patrick",
+   "Kulal, Sumith",
+   "Blattmann, Andreas",
+   "Entezari, Rahim",
+   "Müller, Jonas",
+   "Saini, Harry",
+   "Levi, Yam",
+   "Lorenz, Dominik",
+   "Sauer, Axel",
+   "Boesel, Frederic",
+   "Podell, Dustin",
+   "Dockhorn, Tim",
+   "English, Zion",
+   "Lacey, Kyle",
+   "Goodwin, Alex",
+   "Marek, Yannik",
+   "Rombach, Robin"
+  ],
+  "date": "2024/03/05",
+  "summary": "Diffusion models create data from noise by inverting the forward paths of data towards noise and have emerged as a powerful generative modeling technique for high-dimensional, perceptual data such as images and videos. Rectified flow is a recent generative model formulation that connects data and noise in a straight line. Despite its better theoretical properties and conceptual simplicity, it is not yet decisively established as standard practice. In this work, we improve existing noise sampling techniques for training rectified flow models by biasing them towards perceptually relevant scales. Through a large-scale study, we demonstrate the superior performance of this approach compared to established diffusion formulations for high-resolution text-to-image synthesis. Additionally, we present a novel transformer-based architecture for text-to-image generation that uses separate weights for the two modalities and enables a bidirectional flow of information between image and text tokens, improving text comprehension, typography, and human preference ratings. We demonstrate that this architecture follows predictable scaling trends and correlates lower validation loss to improved text-to-image synthesis as measured by various metrics and human evaluations. Our largest models outperform state-of-the-art models, and we will make our experimental data, code, and model weights publicly available.",
+  "subject": "Computer Vision and Pattern Recognition (cs.CV)",
+  "comments": "",
+  "jref": "",
+  "key": "sd3",
+  "expect": "Scaling Rectified Flow Transformers"
+ },
+ {
+  "id": "2405.05986",
+  "title": "Chirality in rotating nuclei",
+  "authors": [
+   "Frauendorf, S."
+  ],
+  "date": "2024/05/08",
+  "summary": "The article explains on a non-expert level how triaxial rotating nuclei may attain a chiral structure.",
+  "subject": "Popular Physics (physics.pop-ph)",
+  "comments": "",
+  "jref": "McGRAW-HILL YEARBOOK OF SCIENCE &amp; TECHNOLOGY 2011, p.43",
+  "key": "cp2",
+  "expect": "consistency policy visuomotor"
+ },
+ {
+  "id": "2406.09246",
+  "title": "OpenVLA: An Open-Source Vision-Language-Action Model",
+  "authors": [
+   "Kim, Moo Jin",
+   "Pertsch, Karl",
+   "Karamcheti, Siddharth",
+   "Xiao, Ted",
+   "Balakrishna, Ashwin",
+   "Nair, Suraj",
+   "Rafailov, Rafael",
+   "Foster, Ethan",
+   "Lam, Grace",
+   "Sanketi, Pannag",
+   "Vuong, Quan",
+   "Kollar, Thomas",
+   "Burchfiel, Benjamin",
+   "Tedrake, Russ",
+   "Sadigh, Dorsa",
+   "Levine, Sergey",
+   "Liang, Percy",
+   "Finn, Chelsea"
+  ],
+  "date": "2024/06/13",
+  "summary": "Large policies pretrained on a combination of Internet-scale vision-language data and diverse robot demonstrations have the potential to change how we teach robots new skills: rather than training new behaviors from scratch, we can fine-tune such vision-language-action (VLA) models to obtain robust, generalizable policies for visuomotor control. Yet, widespread adoption of VLAs for robotics has been challenging as 1) existing VLAs are largely closed and inaccessible to the public, and 2) prior work fails to explore methods for efficiently fine-tuning VLAs for new tasks, a key component for adoption. Addressing these challenges, we introduce OpenVLA, a 7B-parameter open-source VLA trained on a diverse collection of 970k real-world robot demonstrations. OpenVLA builds on a Llama 2 language model combined with a visual encoder that fuses pretrained features from DINOv2 and SigLIP. As a product of the added data diversity and new model components, OpenVLA demonstrates strong results for generalist manipulation, outperforming closed models such as RT-2-X (55B) by 16.5% in absolute task success rate across 29 tasks and multiple robot embodiments, with 7x fewer parameters. We further show that we can effectively fine-tune OpenVLA for new settings, with especially strong generalization results in multi-task environments involving multiple objects and strong language grounding abilities, and outperform expressive from-scratch imitation learning methods such as Diffusion Policy by 20.4%. We also explore compute efficiency; as a separate contribution, we show that OpenVLA can be fine-tuned on consumer GPUs via modern low-rank adaptation methods and served efficiently via quantization without a hit to downstream success rate. Finally, we release model checkpoints, fine-tuning notebooks, and our PyTorch codebase with built-in support for training VLAs at scale on Open X-Embodiment datasets.",
+  "subject": "Robotics (cs.RO)",
+  "comments": "Website: this https URL",
+  "jref": "",
+  "key": "openvla",
+  "expect": "OpenVLA"
+ },
+ {
+  "id": "2407.02398",
+  "title": "Consistency Flow Matching: Defining Straight Flows with Velocity Consistency",
+  "authors": [
+   "Yang, Ling",
+   "Zhang, Zixiang",
+   "Zhang, Zhilong",
+   "Liu, Xingchao",
+   "Xu, Minkai",
+   "Zhang, Wentao",
+   "Meng, Chenlin",
+   "Ermon, Stefano",
+   "Cui, Bin"
+  ],
+  "date": "2024/07/02",
+  "summary": "Flow matching (FM) is a general framework for defining probability paths via Ordinary Differential Equations (ODEs) to transform between noise and data samples. Recent approaches attempt to straighten these flow trajectories to generate high-quality samples with fewer function evaluations, typically through iterative rectification methods or optimal transport solutions. In this paper, we introduce Consistency Flow Matching (Consistency-FM), a novel FM method that explicitly enforces self-consistency in the velocity field. Consistency-FM directly defines straight flows starting from different times to the same endpoint, imposing constraints on their velocity values. Additionally, we propose a multi-segment training approach for Consistency-FM to enhance expressiveness, achieving a better trade-off between sampling quality and speed. Preliminary experiments demonstrate that our Consistency-FM significantly improves training efficiency by converging 4.4x faster than consistency models and 1.7x faster than rectified flow models while achieving better generation quality. Our code is available at: this https URL",
+  "subject": "Computer Vision and Pattern Recognition (cs.CV)",
+  "comments": "Code: this https URL",
+  "jref": "",
+  "key": "consistencyfm",
+  "expect": "Consistency Flow Matching"
+ },
+ {
+  "id": "2410.12557",
+  "title": "One Step Diffusion via Shortcut Models",
+  "authors": [
+   "Frans, Kevin",
+   "Hafner, Danijar",
+   "Levine, Sergey",
+   "Abbeel, Pieter"
+  ],
+  "date": "2024/10/16",
+  "summary": "Diffusion models and flow-matching models have enabled generating diverse and realistic images by learning to transfer noise to data. However, sampling from these models involves iterative denoising over many neural network passes, making generation slow and expensive. Previous approaches for speeding up sampling require complex training regimes, such as multiple training phases, multiple networks, or fragile scheduling. We introduce shortcut models, a family of generative models that use a single network and training phase to produce high-quality samples in a single or multiple sampling steps. Shortcut models condition the network not only on the current noise level but also on the desired step size, allowing the model to skip ahead in the generation process. Across a wide range of sampling step budgets, shortcut models consistently produce higher quality samples than previous approaches, such as consistency models and reflow. Compared to distillation, shortcut models reduce complexity to a single network and training phase and additionally allow varying step budgets at inference time.",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "",
+  "jref": "",
+  "key": "shortcut",
+  "expect": "One Step Diffusion via Shortcut Models"
+ },
+ {
+  "id": "2410.20015",
+  "title": "An attempt to build a dynamical catalog of Solar System co-orbitals",
+  "authors": [
+   "Pan, Nicolas",
+   "Gallardo, Tabaré"
+  ],
+  "date": "2024/10/26",
+  "summary": "The main objective of this paper is to fully study 1:1 mean-motion resonance in the Solar System. We calculated stability points applying a resonant semi-analytic theory valid for any value of eccentricity or inclination. The location of each equilibrium point changes as the orbital elements of an object change, which led us to map the location of them. For the case of low inclination and low eccentricity we recovered the known L4 and L5 points. The three global types of orbits for this resonance; Tadpoles, Quasi-satellites and Horseshoes, vary as a function of the orbital elements, even disappearing for some cases. In order to build a catalog of real co-orbital objects, we filtered the NASA Horizons asteroids catalog inside the maximum resonant width and analyzed which objects are indeed in resonance. In total, we found 167 objects to be in co-orbital resonant motion with Solar System planets excluding Jupiter. We were able to recover all the already known objects and to confirm the resonant state of some new ones. Mercury remains to be the only planet with zero known co-orbitals and no L5 Earth Trojan has been discovered so far. Among the interesting identified orbits we highlight the one of 2021 FV1, a new Mars Quasi-satellite. Despite having circulating critical angles, we found some objects to be dynamically driven by the resonance such as 2012 QR50.",
+  "subject": "Earth and Planetary Astrophysics (astro-ph.EP)",
+  "comments": "26 pages, 8 figures",
+  "jref": "Celest Mech Dyn Astron 137, 2 (2025)",
+  "key": "ogbench",
+  "expect": "OGBench"
+ },
+ {
+  "id": "2410.20092",
+  "title": "OGBench: Benchmarking Offline Goal-Conditioned RL",
+  "authors": [
+   "Park, Seohong",
+   "Frans, Kevin",
+   "Eysenbach, Benjamin",
+   "Levine, Sergey"
+  ],
+  "date": "2024/10/26",
+  "summary": "Offline goal-conditioned reinforcement learning (GCRL) is a major problem in reinforcement learning (RL) because it provides a simple, unsupervised, and domain-agnostic way to acquire diverse behaviors and representations from unlabeled data without rewards. Despite the importance of this setting, we lack a standard benchmark that can systematically evaluate the capabilities of offline GCRL algorithms. In this work, we propose OGBench, a new, high-quality benchmark for algorithms research in offline goal-conditioned RL. OGBench consists of 8 types of environments, 85 datasets, and reference implementations of 6 representative offline GCRL algorithms. We have designed these challenging and realistic environments and datasets to directly probe different capabilities of algorithms, such as stitching, long-horizon reasoning, and the ability to handle high-dimensional inputs and stochasticity. While representative algorithms may rank similarly on prior benchmarks, our experiments reveal stark strengths and weaknesses in these different capabilities, providing a strong foundation for building new algorithms. Project page: this https URL",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "ICLR 2025",
+  "jref": "",
+  "key": "ogbench",
+  "expect": "OGBench offline goal-conditioned RL"
+ },
+ {
+  "id": "2412.06264",
+  "title": "Flow Matching Guide and Code",
+  "authors": [
+   "Lipman, Yaron",
+   "Havasi, Marton",
+   "Holderrieth, Peter",
+   "Shaul, Neta",
+   "Le, Matt",
+   "Karrer, Brian",
+   "Chen, Ricky T. Q.",
+   "Lopez-Paz, David",
+   "Ben-Hamu, Heli",
+   "Gat, Itai"
+  ],
+  "date": "2024/12/09",
+  "summary": "Flow Matching (FM) is a recent framework for generative modeling that has achieved state-of-the-art performance across various domains, including image, video, audio, speech, and biological structures. This guide offers a comprehensive and self-contained review of FM, covering its mathematical foundations, design choices, and extensions. By also providing a PyTorch package featuring relevant examples (e.g., image and text generation), this work aims to serve as a resource for both novice and experienced researchers interested in understanding, applying and further developing FM.",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "",
+  "jref": "",
+  "key": "fmguide",
+  "expect": "Flow Matching Guide and Code"
+ },
+ {
+  "id": "2502.01490",
+  "title": "MoireDB: Formula-generated Interference-fringe Image Dataset",
+  "authors": [
+   "Matsuo, Yuto",
+   "Hayamizu, Ryo",
+   "Kataoka, Hirokatsu",
+   "Nakamura, Akio"
+  ],
+  "date": "2025/02/03",
+  "summary": "Image recognition models have struggled to treat recognition robustness to real-world degradations. In this context, data augmentation methods like PixMix improve robustness but rely on generative arts and feature visualizations (FVis), which have copyright, drawing cost, and scalability issues. We propose MoireDB, a formula-generated interference-fringe image dataset for image augmentation enhancing robustness. MoireDB eliminates copyright concerns, reduces dataset assembly costs, and enhances robustness by leveraging illusory patterns. Experiments show that MoireDB augmented images outperforms traditional Fractal arts and FVis-based augmentations, making it a scalable and effective solution for improving model robustness against real-world degradations.",
+  "subject": "Computer Vision and Pattern Recognition (cs.CV)",
+  "comments": "",
+  "jref": "",
+  "key": "ladd",
+  "expect": "LADD"
+ },
+ {
+  "id": "2502.02538",
+  "title": "Flow Q-Learning",
+  "authors": [
+   "Park, Seohong",
+   "Li, Qiyang",
+   "Levine, Sergey"
+  ],
+  "date": "2025/02/04",
+  "summary": "We present flow Q-learning (FQL), a simple and performant offline reinforcement learning (RL) method that leverages an expressive flow-matching policy to model arbitrarily complex action distributions in data. Training a flow policy with RL is a tricky problem, due to the iterative nature of the action generation process. We address this challenge by training an expressive one-step policy with RL, rather than directly guiding an iterative flow policy to maximize values. This way, we can completely avoid unstable recursive backpropagation, eliminate costly iterative action generation at test time, yet still mostly maintain expressivity. We experimentally show that FQL leads to strong performance across 73 challenging state- and pixel-based OGBench and D4RL tasks in offline RL and offline-to-online RL. Project page: this https URL",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "ICML 2025",
+  "jref": "",
+  "key": "fql",
+  "expect": "Flow Q-Learning"
+ },
+ {
+  "id": "2505.13447",
+  "title": "Mean Flows for One-step Generative Modeling",
+  "authors": [
+   "Geng, Zhengyang",
+   "Deng, Mingyang",
+   "Bai, Xingjian",
+   "Kolter, J. Zico",
+   "He, Kaiming"
+  ],
+  "date": "2025/05/19",
+  "summary": "We propose a principled and effective framework for one-step generative modeling. We introduce the notion of average velocity to characterize flow fields, in contrast to instantaneous velocity modeled by Flow Matching methods. A well-defined identity between average and instantaneous velocities is derived and used to guide neural network training. Our method, termed the MeanFlow model, is self-contained and requires no pre-training, distillation, or curriculum learning. MeanFlow demonstrates strong empirical performance: it achieves an FID of 3.43 with a single function evaluation (1-NFE) on ImageNet 256x256 trained from scratch, significantly outperforming previous state-of-the-art one-step diffusion/flow models. Our study substantially narrows the gap between one-step diffusion/flow models and their multi-step predecessors, and we hope it will motivate future research to revisit the foundations of these powerful models.",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "Tech report",
+  "jref": "",
+  "key": "meanflows",
+  "expect": "Mean Flows for One-step Generative Modeling"
+ },
+ {
+  "id": "2506.11172",
+  "title": "Collapsing Sequence-Level Data-Policy Coverage via Poisoning Attack in Offline Reinforcement Learning",
+  "authors": [
+   "Zhou, Xue",
+   "Man, Dapeng",
+   "Xu, Chen",
+   "Zeng, Fanyi",
+   "Liu, Tao",
+   "Wang, Huan",
+   "He, Shucheng",
+   "Gao, Chaoyang",
+   "Yang, Wu"
+  ],
+  "date": "2025/06/12",
+  "summary": "Offline reinforcement learning (RL) heavily relies on the coverage of pre-collected data over the target policy&#39;s distribution. Existing studies aim to improve data-policy coverage to mitigate distributional shifts, but overlook security risks from insufficient coverage, and the single-step analysis is not consistent with the multi-step decision-making nature of offline RL. To address this, we introduce the sequence-level concentrability coefficient to quantify coverage, and reveal its exponential amplification on the upper bound of estimation errors through theoretical analysis. Building on this, we propose the Collapsing Sequence-Level Data-Policy Coverage (CSDPC) poisoning attack. Considering the continuous nature of offline RL data, we convert state-action pairs into decision units, and extract representative decision patterns that capture multi-step behavior. We identify rare patterns likely to cause insufficient coverage, and poison them to reduce coverage and exacerbate distributional shifts. Experiments show that poisoning just 1% of the dataset can degrade agent performance by 90%. This finding provides new perspectives for analyzing and safeguarding the security of offline RL.",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "",
+  "jref": "",
+  "key": "c17",
+  "expect": "sequence-level data-policy coverage"
+ },
+ {
+  "id": "2602.01606",
+  "title": "Boosting Maximum Entropy Reinforcement Learning via One-Step Flow Matching",
+  "authors": [
+   "Li, Zeqiao",
+   "Wang, Yijing",
+   "Wang, Haoyu",
+   "Li, Zheng",
+   "Zuo, Zhiqiang"
+  ],
+  "date": "2026/02/02",
+  "summary": "Diffusion policies are expressive yet incur high inference latency. Flow Matching (FM) enables one-step generation, but integrating it into Maximum Entropy Reinforcement Learning (MaxEnt RL) is challenging: the optimal policy is an intractable energy-based distribution, and the efficient log-likelihood estimation required to balance exploration and exploitation suffers from severe discretization bias. We propose \\textbf{F}low-based \\textbf{L}og-likelihood-\\textbf{A}ware \\textbf{M}aximum \\textbf{E}ntropy RL (\\textbf{FLAME}), a principled framework that addresses these challenges. First, we derive a Q-Reweighted FM objective that bypasses partition function estimation via importance reweighting. Second, we design a decoupled entropy estimator that rigorously corrects bias, which enables efficient exploration and brings the policy closer to the optimal MaxEnt policy. Third, we integrate the MeanFlow formulation to achieve expressive and efficient one-step control. Empirical results on MuJoCo show that FLAME outperforms Gaussian baselines and matches multi-step diffusion policies with significantly lower inference cost. Code is available at this https URL .",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "",
+  "jref": "",
+  "key": "flame",
+  "expect": "FLAME one-step flow matching MaxEnt RL"
+ },
+ {
+  "id": "2602.13810",
+  "title": "Mean Flow Policy with Instantaneous Velocity Constraint for One-step Action Generation",
+  "authors": [
+   "Zhan, Guojian",
+   "Tao, Letian",
+   "Wang, Pengcheng",
+   "Wang, Yixiao",
+   "Li, Yiheng",
+   "Chen, Yuxin",
+   "Li, Hongyang",
+   "Tomizuka, Masayoshi",
+   "Li, Shengbo Eben"
+  ],
+  "date": "2026/02/14",
+  "summary": "Learning expressive and efficient policy functions is a promising direction in reinforcement learning (RL). While flow-based policies have recently proven effective in modeling complex action distributions with a fast deterministic sampling process, they still face a trade-off between expressiveness and computational burden, which is typically controlled by the number of flow steps. In this work, we propose mean velocity policy (MVP), a new generative policy function that models the mean velocity field to achieve the fastest one-step action generation. To ensure its high expressiveness, an instantaneous velocity constraint (IVC) is introduced on the mean velocity field during training. We theoretically prove that this design explicitly serves as a crucial boundary condition, thereby improving learning accuracy and enhancing policy expressiveness. Empirically, our MVP achieves state-of-the-art success rates across several challenging robotic manipulation tasks from Robomimic and OGBench. It also delivers substantial improvements in training and inference speed over existing flow-based policy baselines.",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "ICLR Oral Presentation",
+  "jref": "",
+  "key": "mvp",
+  "expect": "MVP instantaneous velocity one-step policy"
+ },
+ {
+  "id": "2603.05296",
+  "title": "Latent Policy Steering through One-Step Flow Policies",
+  "authors": [
+   "Im, Hokyun",
+   "Kolobov, Andrey",
+   "Fu, Jianlong",
+   "Lee, Youngwoon"
+  ],
+  "date": "2026/03/05",
+  "summary": "Offline reinforcement learning (RL) allows robots to learn from offline datasets without risky exploration. Yet, offline RL&#39;s performance often hinges on a brittle trade-off between (1) return maximization, which can push policies outside the dataset support, and (2) behavioral constraints, which typically require sensitive hyperparameter tuning. Latent steering offers a structural way to stay within the dataset support during RL, but existing offline adaptations commonly approximate action values using latent-space critics learned via indirect distillation, which can lose information and hinder convergence. We propose Latent Policy Steering (LPS), which enables high-fidelity latent policy improvement by backpropagating original-action-space Q-gradients through a differentiable one-step MeanFlow policy to update a latent-action-space actor. By eliminating proxy latent critics, LPS allows an original-action-space critic to guide end-to-end latent-space optimization, while the one-step MeanFlow policy serves as a behavior-constrained generative prior. This decoupling yields a robust method that works out-of-the-box with minimal tuning. Across OGBench and real-world robotic tasks, LPS achieves state-of-the-art performance and consistently outperforms behavioral cloning and strong latent steering baselines.",
+  "subject": "Robotics (cs.RO)",
+  "comments": "Accepted to RSS 2026, Project Webpage : this https URL",
+  "jref": "",
+  "key": "lps",
+  "expect": "LPS latent one-step flow policy"
+ },
+ {
+  "id": "2603.12480",
+  "title": "One-Step Flow Policy: Self-Distillation for Fast Visuomotor Policies",
+  "authors": [
+   "Li, Shaolong",
+   "Sun, Lichao",
+   "Chen, Yongchao"
+  ],
+  "date": "2026/03/12",
+  "summary": "Generative flow and diffusion models provide the continuous, multimodal action distributions needed for high-precision robotic policies. However, their reliance on iterative sampling introduces severe inference latency, degrading control frequency and harming performance in time-sensitive manipulation. To address this problem, we propose the One-Step Flow Policy (OFP), a from-scratch self-distillation framework for high-fidelity, single-step action generation without a pre-trained teacher. OFP unifies a self-consistency loss to enforce coherent transport across time intervals, and a self-guided regularization to sharpen predictions toward high-density expert modes. In addition, a warm-start mechanism leverages temporal action correlations to minimize the generative transport distance. Evaluations across 56 diverse simulated manipulation tasks demonstrate that a one-step OFP achieves state-of-the-art results, outperforming 100-step diffusion and flow policies while accelerating action generation by over $100\\times$. We further integrate OFP into the $\\pi_{0.5}$ model on RoboTwin 2.0, where one-step OFP surpasses the original 10-step policy. These results establish OFP as a practical, scalable solution for highly accurate and low-latency robot control.",
+  "subject": "Robotics (cs.RO)",
+  "comments": "",
+  "jref": "",
+  "key": "c19",
+  "expect": "one-step flow policy self-distillation"
+ },
+ {
+  "id": "2605.01663",
+  "title": "Towards Efficient and Expressive Offline RL via Flow-Anchored Noise-conditioned Q-Learning",
+  "authors": [
+   "Lee, Sungyoung",
+   "Kim, Dohyeong",
+   "Balachandar, Eshan",
+   "Mustafaoglu, Zelal Su",
+   "Pingali, Keshav"
+  ],
+  "date": "2026/05/03",
+  "summary": "We propose Flow-Anchored Noise-conditioned Q-Learning (FAN), a highly efficient and high-performing offline reinforcement learning (RL) algorithm. Recent work has shown that expressive flow policies and distributional critics improve offline RL performance, but at a high computational cost. Specifically, flow policies require iterative sampling to produce a single action, and distributional critics require computation over multiple samples (e.g., quantiles) to estimate value. To address these inefficiencies while maintaining high performance, we introduce FAN. Our method employs a behavior regularization technique that uses a single flow policy iteration and requires a single Gaussian noise sample for distributional critics. Our theoretical analysis of convergence and performance bounds demonstrates that these simplifications not only improve efficiency but also lead to superior task performance. Experiments on robotic manipulation and locomotion tasks demonstrate that FAN achieves state-of-the-art performance while significantly reducing both training and inference runtimes. We release our code at this https URL .",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "ICML 2026",
+  "jref": "",
+  "key": "fan",
+  "expect": "FAN flow anchoring noise-conditioned Q"
+ },
+ {
+  "id": "2606.05737",
+  "title": "Let It Be Simple: One-Step Action Generation for Vision-Language-Action Models",
+  "authors": [
+   "Chen, Yitong",
+   "Zhang, Shiduo",
+   "Gong, Jingjing",
+   "Qiu, Xipeng"
+  ],
+  "date": "2026/06/04",
+  "summary": "Generating diverse images from sparse text is hard; generating compact actions from rich observations is easier. From the condition-target view, Vision-Language-Action (VLA) thus aligns with image-to-text, not text-to-image. We formalize this view through the irreducible velocity loss $R_v(t,c)$ of standard flow matching and validate it with a controlled 8-mode toy experiment and image-to-text MNIST task. We then show that high-noise training boosts one-step VLA decoding on standard LIBERO, achieving 95.6% on LIBERO-Long, and remains competitive across LIBERO-Plus, LIBERO-Pro, and real-world robot tasks, while ablations that weaken the condition or expand the horizon predictably erase the one-step gain. These results suggest that whether one-step action generation works in VLA depends not on specialized training, but on the condition-target structure.",
+  "subject": "Computer Vision and Pattern Recognition (cs.CV)",
+  "comments": "13 pages, 10 figures",
+  "jref": "",
+  "key": "c20",
+  "expect": "condition-target structure VLA one-step"
+ },
+ {
+  "id": "2606.10613",
+  "title": "Fast and Highly Expressive Policy Learning for Offline Reinforcement Learning via Bootstrapped Flow Q-Learning",
+  "authors": [
+   "Nguyen, Thanh",
+   "Ton, Tri",
+   "Choe, Hongbin",
+   "Luu, Tung M.",
+   "Yoo, Chang D."
+  ],
+  "date": "2026/06/09",
+  "summary": "Diffusion-based Q-learning has emerged as a powerful paradigm for offline reinforcement learning, but its reliance on multi-step denoising makes both training and inference computationally expensive and brittle. Recent efforts to accelerate diffusion Q-learning toward single-step action generation typically introduce auxiliary networks, policy distillation, or multi-phase training, which frequently compromise simplicity, stability, or performance. To address these limitations, we introduce Bootstrapped Flow Q-Learning (BFQ), a novel framework that enables accurate single-step action generation during both training and inference, without auxiliary networks or distillation procedures. BFQ adopts a divide-and-conquer view of the displacement vector along the flow path: it begins by learning short-range displacements that can be accurately estimated from the Flow Matching marginal velocity, and bootstraps these components to directly learn a noise-to-action mapping in a single step. This formulation eliminates multi-step denoising, resulting in a learning procedure that is substantially faster, simpler, and more robust. Extensive D4RL evaluations show that BFQ improves performance while significantly reducing computational cost compared to multi-step diffusion baselines, demonstrating that single-step action generation suffices for high-performance offline Reinforcement Learning.",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "ICML 2026, 19 pages",
+  "jref": "ICML 2026",
+  "key": "c18",
+  "expect": "bootstrapped flow Q one-step"
+ },
+ {
+  "id": "2606.22752",
+  "title": "One-Step Flow Matching for Generative Modeling of Path-Dependent Physical Fields",
+  "authors": [
+   "Zhou, Yijing",
+   "Jelovica, Jasmin"
+  ],
+  "date": "2026/06/22",
+  "summary": "Physical simulations for intricate geometries with path-dependent constitutive models face difficulties due to the enormous computational cost they require. Recently, the emergence of generative AI models, which succeed in image and video synthesis tasks, has provided a promise to further improve simulations. Although U-Net-based denoising diffusion probabilistic models (DDPMs) have been adopted for elastic stress field generation, they typically require hundreds of sampling steps, and applications of generative models to path-dependent, e.g. plastic, stress fields remain very limited. In this work, we propose a novel flow matching (FM) model based on a transformer backbone for high-resolution path-dependent stress field generation with stochastic loading-unloading paths and geometry. The proposed model operates within the latent space of a variational autoencoder (VAE) and formulates the simulation of plastic fields as a video synthesis task, directly generating the stress fields across all time steps. Meanwhile, we design a non-Gaussian source distribution for flow matching, such that crossings among conditional transport paths are reduced during training. This enables our model to generate satisfactory samples in one step without relying on distillation. In addition, we introduce token-level loading embeddings and two auxiliary networks to further enhance the model performance in path-dependent simulation. The results demonstrate that, even with a limited training dataset, our model can accurately generate high-resolution path-dependent fields. It is much more computationally efficient than finite element analysis, providing a speedup of 6 to 7 times over FEM on CPUs and approximately two orders of magnitude speedup on consumer-grade GPUs.",
+  "subject": "Machine Learning (cs.LG)",
+  "comments": "25 pages",
+  "jref": "",
+  "key": "onestepfm",
+  "expect": "One-Step Flow Matching physical fields"
+ }
+]

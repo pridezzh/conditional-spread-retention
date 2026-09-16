@@ -1,0 +1,15 @@
+# Reproduction dependencies for "Whether One Step Is Enough Is Not Determined by the Data"
+#
+#   python -m pip install -r requirements.txt
+#
+# Everything runs on CPU; the CUDA build of PyTorch is not needed.
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+#
+# Versions are those the paper was produced with.  Newer versions generally work,
+# with one caveat: scipy's spearmanr / mannwhitneyu changed their return type
+# around 1.9.  The code uses the 1.11+ object form (.statistic), so older scipy
+# needs those call sites changed back to tuple unpacking.
+numpy>=1.26
+scipy>=1.11
+torch>=2.2
+matplotlib>=3.8

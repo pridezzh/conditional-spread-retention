@@ -1,0 +1,72 @@
+{
+  "K": 8,
+  "radius": 3.0,
+  "sigma": 0.25,
+  "n_samples": 4000,
+  "closed_form_tr_var_x1": 9.125,
+  "endpoint_identity_max_err": 8.881784197001252e-16,
+  "one_step_spread": 3.591690686769953e-32,
+  "sweep": [
+    {
+      "N": 1,
+      "rho": 3.9360993827615926e-33,
+      "modes_covered": 0,
+      "n_modes": 8
+    },
+    {
+      "N": 2,
+      "rho": 0.590723284159794,
+      "modes_covered": 8,
+      "n_modes": 8
+    },
+    {
+      "N": 4,
+      "rho": 0.8572975970349973,
+      "modes_covered": 8,
+      "n_modes": 8
+    },
+    {
+      "N": 8,
+      "rho": 0.9233261583914565,
+      "modes_covered": 8,
+      "n_modes": 8
+    },
+    {
+      "N": 16,
+      "rho": 0.961210723827789,
+      "modes_covered": 8,
+      "n_modes": 8
+    },
+    {
+      "N": 32,
+      "rho": 0.9815068678831107,
+      "modes_covered": 8,
+      "n_modes": 8
+    },
+    {
+      "N": 64,
+      "rho": 0.9920452989613611,
+      "modes_covered": 8,
+      "n_modes": 8
+    },
+    {
+      "N": 128,
+      "rho": 0.9974208722640622,
+      "modes_covered": 8,
+      "n_modes": 8
+    },
+    {
+      "N": 256,
+      "rho": 1.000136505273928,
+      "modes_covered": 8,
+      "n_modes": 8
+    }
+  ],
+  "checks": {
+    "endpoint_identity": true,
+    "one_step_collapse": true,
+    "monotone_in_N": true,
+    "reaches_one": true
+  },
+  "verdict": "PASS"
+}

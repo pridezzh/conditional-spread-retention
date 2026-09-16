@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the accompanying paper."
+title: "Whether One Step Is Enough Is Not Determined by the Data: Coupling, Loss Form, and an Impossibility Theorem"
+abstract: >-
+  Code and raw results for a study of when a one-step generative policy suffices.
+  The paper defines the realised conditional-spread ratio rho, proves that rho of
+  the L2-optimal one-step map is a property of the training target rather than of
+  the data, gives a one-parameter family of training targets with an identical
+  (c, x1) law for which rho sweeps [0, 1], and derives a minimax form showing that
+  any data-only statistic has worst-case risk exactly 1/2. It also maps two escape
+  channels and locates the loss channel's structure in the scope of the matching
+  (pooled versus per-condition) rather than in the absence of a bijection.
+version: 1.0.0
+date-released: "2026-09-16"
+license: MIT
+type: software
+authors:
+  - name: "Anonymous Authors"
+keywords:
+  - flow matching
+  - diffusion policy
+  - one-step generation
+  - mode collapse
+  - coupling
+  - impossibility theorem

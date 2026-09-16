@@ -1,0 +1,154 @@
+{
+  "K": 8,
+  "radius": 3.0,
+  "sigma": 0.25,
+  "n_train": 1024,
+  "n_test": 1024,
+  "target_tr_var": 9.113811827156482,
+  "scipy_ot": true,
+  "independent": [
+    {
+      "k": 1,
+      "rho": 1.0081128245090134,
+      "modes_covered": 8,
+      "n_modes": 8,
+      "null_1_over_k": 1.0
+    },
+    {
+      "k": 2,
+      "rho": 0.5059275616245856,
+      "modes_covered": 8,
+      "n_modes": 8,
+      "null_1_over_k": 0.5
+    },
+    {
+      "k": 5,
+      "rho": 0.21392976828220428,
+      "modes_covered": 5,
+      "n_modes": 8,
+      "null_1_over_k": 0.2
+    },
+    {
+      "k": 10,
+      "rho": 0.11141203379627221,
+      "modes_covered": 0,
+      "n_modes": 8,
+      "null_1_over_k": 0.1
+    },
+    {
+      "k": 20,
+      "rho": 0.05532547561363976,
+      "modes_covered": 0,
+      "n_modes": 8,
+      "null_1_over_k": 0.05
+    },
+    {
+      "k": 50,
+      "rho": 0.020158859192108695,
+      "modes_covered": 0,
+      "n_modes": 8,
+      "null_1_over_k": 0.02
+    },
+    {
+      "k": 100,
+      "rho": 0.009325223102826586,
+      "modes_covered": 0,
+      "n_modes": 8,
+      "null_1_over_k": 0.01
+    },
+    {
+      "k": 200,
+      "rho": 0.003911432399544499,
+      "modes_covered": 0,
+      "n_modes": 8,
+      "null_1_over_k": 0.005
+    },
+    {
+      "k": 400,
+      "rho": 0.0008351659307585479,
+      "modes_covered": 0,
+      "n_modes": 8,
+      "null_1_over_k": 0.0025
+    }
+  ],
+  "deterministic": [
+    {
+      "k": 1,
+      "rho": 0.9938814442192307,
+      "modes_covered": 8,
+      "n_modes": 8
+    },
+    {
+      "k": 2,
+      "rho": 0.9871473356908695,
+      "modes_covered": 8,
+      "n_modes": 8
+    },
+    {
+      "k": 5,
+      "rho": 0.9755547581307475,
+      "modes_covered": 8,
+      "n_modes": 8
+    },
+    {
+      "k": 10,
+      "rho": 0.9599292120852492,
+      "modes_covered": 8,
+      "n_modes": 8
+    },
+    {
+      "k": 20,
+      "rho": 0.9356534123539504,
+      "modes_covered": 8,
+      "n_modes": 8
+    },
+    {
+      "k": 50,
+      "rho": 0.8787070074544439,
+      "modes_covered": 8,
+      "n_modes": 8
+    },
+    {
+      "k": 100,
+      "rho": 0.8018297927234028,
+      "modes_covered": 8,
+      "n_modes": 8
+    },
+    {
+      "k": 200,
+      "rho": 0.660298758294909,
+      "modes_covered": 8,
+      "n_modes": 8
+    },
+    {
+      "k": 400,
+      "rho": 0.36865334544003286,
+      "modes_covered": 0,
+      "n_modes": 8
+    }
+  ],
+  "deterministic_target_tr_var": 9.113811827156484,
+  "valid_regime": {
+    "k_max": 51,
+    "k_ref": 50,
+    "note": "kNN 一致性要求 k/n -> 0；取 k <= n/20"
+  },
+  "one_over_k_ratio": {
+    "1": 1.0081128245090134,
+    "2": 1.0118551232491713,
+    "5": 1.0696488414110212,
+    "10": 1.114120337962722,
+    "20": 1.1065095122727953,
+    "50": 1.0079429596054348
+  },
+  "rho_independent_at_k50": 0.020158859192108695,
+  "rho_deterministic_at_k50": 0.8787070074544439,
+  "contrast_at_k50": 43.589123723748166,
+  "checks": {
+    "one_over_k_law_holds": true,
+    "independent_near_zero": true,
+    "deterministic_near_one": true,
+    "contrast_gt_5": true
+  },
+  "verdict": "PASS"
+}
