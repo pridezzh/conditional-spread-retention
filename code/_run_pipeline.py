@@ -1,24 +1,27 @@
 # -*- coding: utf-8 -*-
-"""从已有 results/ 与 logs/ 重建数值宏、图与论文。
+"""Rebuild numeric macros, figures, and the paper from existing results/ and logs/.
 
-顺序（2026-09-16 起，第三轮重写后的新流水线）：
+Order (from 2026-09-16, the new pipeline after the third rewrite):
     make_theory_macros -> make_fig_impossibility -> make_fig_ladder
     -> check_macros -> build_paper
 
-**本脚本不会训练模型或重跑实验**，因而不能单独称为"完整复现"；
-它只把已经跑出来的 results/*.json 与 logs/*.json 装配成稿件。
-跑实验请用 code/experiments/ 下的脚本，跑验证请用 code/analysis/ 下
-verify_*/validate_* 脚本。
+**This script does NOT train models or rerun experiments**, so it cannot by itself
+be called "full reproduction"; it only assembles the already-produced results/*.json
+and logs/*.json into the manuscript. To run experiments, use the scripts under
+code/experiments/; to run verification, use the verify_*/validate_* scripts under
+code/analysis/.
 
-为什么和旧版不同：旧流水线是
-`make_tables -> make_figures -> make_vis -> check_macros -> build_paper`，
-产出的 `paper/numbers.tex`（162 个宏）与 `tables/`、`figures/fig1..fig6`
-在第三轮重写后**已不被正文引用**（实测引用数 = 0）。保留旧流水线会让
-"哪个才是真流水线"变模糊，故按新依赖重排。旧脚本仍留在 `code/analysis/`
-与 `code/archive/` 作为历史。
+Why this differs from the old version: the old pipeline was
+`make_tables -> make_figures -> make_vis -> check_macros -> build_paper`,
+whose output `paper/numbers.tex` (162 macros) and `tables/`, `figures/fig1..fig6`
+are **no longer referenced by the body text** after the third rewrite (measured
+reference count = 0). Keeping the old pipeline around would blur "which is the real
+pipeline", so the steps are reordered by the new dependencies. The old scripts
+remain in `code/analysis/` and `code/archive/` as history.
 
-默认用当前解释器（sys.executable）；可用环境变量 PIPELINE_PY 覆盖。
-日志写到项目根 logs/pipeline.log。
+Uses the current interpreter (sys.executable) by default; can be overridden with
+the PIPELINE_PY environment variable. Logs are written to logs/pipeline.log at the
+project root.
 """
 import os
 import subprocess
@@ -29,7 +32,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 
 
 def _find_root(d):
-    """向上找到同时含 code/ 与 paper/ 的一级；与脚本自身深度无关。"""
+    """Walk up to the top level that contains both code/ and paper/; independent of the script's own depth."""
     while os.path.dirname(d) != d:
         if os.path.isdir(os.path.join(d, "code")) and os.path.isdir(os.path.join(d, "paper")):
             return d
@@ -43,7 +46,7 @@ os.makedirs(LOGDIR, exist_ok=True)
 
 PY = os.environ.get("PIPELINE_PY", sys.executable)
 
-# (步骤名, [相对 code/ 的脚本路径, 额外参数...])
+# (step name, [script path relative to code/, extra args...])
 STEPS = [
     ("make_theory_macros", ["analysis/make_theory_macros.py"]),
     ("make_fig_impossibility", ["analysis/make_fig_impossibility.py"]),

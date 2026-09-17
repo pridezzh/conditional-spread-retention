@@ -1,55 +1,66 @@
 # -*- coding: utf-8 -*-
-"""损失形式阶梯：pointwise L2 / 非平衡集合级 / 平衡集合级。
+"""Loss-form ladder: pointwise L2 / unbalanced set-level / balanced set-level.
 
 --------------------------------------------------------------------
-要检验的理论（三层次阶梯）
+Theory under test (a three-tier ladder)
 --------------------------------------------------------------------
-固定耦合为**独立耦合**（x0 ⊥ x1 | c），只改损失形式。记 q_c = f(·,c)_# p0。
+Fix the coupling as **independent coupling** (x0 ⊥ x1 | c), and only vary the loss
+form. Let q_c = f(·,c)_# p0.
 
   L1  pointwise L2
       L = E ||f(x0,c) - x1||^2
-      极小元 f*(x0,c) = E[x1 | x0, c] = E[x1 | c] = m(c)      （独立耦合）
-      => q_c = δ_{m(c)}，ρ* = 0。**塌缩**。
+      minimizer f*(x0,c) = E[x1 | x0, c] = E[x1 | c] = m(c)      (independent coupling)
+      => q_c = δ_{m(c)}, ρ* = 0. **Collapse**.
 
-  L2  非平衡集合级（Chamfer / IMLE 式 min-matching）
-      种群极限（batch M -> ∞）：
+  L2  unbalanced set-level (Chamfer / IMLE-style min-matching)
+      population limit (batch M -> ∞):
         L -> E_{y~p_c}[ min_{x in supp q_c} ||y-x||^2 ] + E_{x~q_c}[ min_{y in supp p_c} ||x-y||^2 ]
-      两项同时为 0 **当且仅当 supp q_c = supp p_c**。
-      => 塌缩解除，但**权重完全不受约束**：任何与 p_c 同支撑的 q_c 都是最优。
-      可测预测：覆盖 8/8，但**逐条件展布被拉平**（各条件趋于同一个值），
-      即 ρ_j 的离散度远大于 0，且 ρ_j 与真实半径无关。
+      both terms are 0 **iff supp q_c = supp p_c**.
+      => collapse is lifted, but **weights are completely unconstrained**: any q_c with the
+      same support as p_c is optimal.
+      measurable prediction: coverage 8/8, but **per-condition spread is flattened**
+      (every condition converges to the same value), i.e. the dispersion of ρ_j is far
+      greater than 0, and ρ_j is unrelated to the true radius.
 
-  L3  平衡集合级（批内最优指派 / 传输）
-      种群极限 -> W_2^2(p_c, q_c)，唯一极小元 q_c = p_c。
-      => ρ* = 1，且逐条件展布正确，ρ_j 离散度 ≈ 0。
+  L3  balanced set-level (in-batch optimal assignment / transport)
+      population limit -> W_2^2(p_c, q_c), unique minimizer q_c = p_c.
+      => ρ* = 1, per-condition spread is correct, dispersion of ρ_j ≈ 0.
 
-这条阶梯的**可证伪**之处在于 L2 与 L3 的差别：如果"任何集合级损失都等价"，
-那么 L2 与 L3 的 ρ_j 离散度应当相当。我们预测 L3 的离散度显著更小。
+The **falsifiable** part of this ladder is the difference between L2 and L3: if "any
+set-level loss is equivalent", then the dispersion of ρ_j for L2 and L3 should be
+comparable. We predict L3's dispersion is significantly smaller.
 
-判据（预先写死）
-----------------
-  B1  onestep_l2      @1：ρ < 0.05                        （L1 塌缩）
-  B2  chamfer         @1：ρ > 0.5 且覆盖 >= 6             （L2 逃脱塌缩）
-  B3  balanced        @1：ρ > 0.5 且覆盖 >= 6             （L3 逃脱塌缩）
-  B4  **|ρ_j − 1| 的均值：balanced < chamfer**                 （L3 恢复律，L2 只恢复支撑）
-  B5  **cSW：balanced < chamfer**                              （保真度：L3 更准）
+Criteria (hard-coded in advance)
+--------------------------------
+  B1  onestep_l2      @1: rho < 0.05                        (L1 collapse)
+  B2  chamfer         @1: rho > 0.5 and coverage >= 6             (L2 escapes collapse)
+  B3  balanced        @1: rho > 0.5 and coverage >= 6             (L3 escapes collapse)
+  B4  **mean of |ρ_j - 1|: balanced < chamfer**                   (L3 recovers the law, L2 only recovers support)
+  B5  **cSW: balanced < chamfer**                                 (fidelity: L3 is more accurate)
 
-B4/B5 是这条阶梯真正的赌注：若它们判负，则"平衡性是关键"的主张被推翻。
+B4/B5 are the real stakes of this ladder: if they fail, the claim "balance is the key"
+is overturned.
 
-**为什么判据只写方向、不写倍数。** 早期版本写过 `disp(chamfer) > 2 × disp(balanced)`
-这类**猜出来的效应量**，结果 40 步冒烟就判负（0.396 对 2×0.250），但那只是训练没收敛，
-不是理论失效。倍数取决于优化到什么程度，属于**不可预先确定的量**；
-而"L3 的种群最优就是 p_c、L2 的种群最优集合里混着一堆错权重的分布"是**定性的**，
-只能用方向性判据检验。倍数作为描述性数字照报，但不进判据。
+**Why the criteria only state directions, not multiples.** An earlier version wrote
+effect sizes like `disp(chamfer) > 2 × disp(balanced)` that were **guessed**; the result
+was that a 40-step smoke test already failed (0.396 vs 2×0.250), but that was only
+training not having converged, not a theory failure. The multiple depends on how far
+optimization goes and is an **unknowable-ahead-of-time quantity**; whereas "L3's
+population optimum is exactly p_c, while L2's population optimum set is a mixture of
+distributions with wrong weights" is **qualitative**, and can only be tested with
+directional criteria. The multiples are reported as descriptive numbers, but do not
+enter the criteria.
 """
 import json
 import os
 import sys
 import time
 
-# Windows/Anaconda：numpy 与 torch 各带一份 libiomp5md.dll，重复初始化会让进程在
-# 训练**中途**以 exit code 3 崩溃（OMP: Error #15）。必须在 import numpy/torch
-# **之前**设置。此前只有 code/_run_pipeline.py 为子进程设过它，直接跑本脚本会崩。
+# Windows/Anaconda: numpy and torch each bundle their own copy of libiomp5md.dll; a
+# duplicate initialization crashes the process **mid-training** with exit code 3
+# (OMP: Error #15). This must be set **before** importing numpy/torch. Previously
+# only code/_run_pipeline.py set it for child processes; running this script
+# directly would crash.
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
 
@@ -84,12 +95,14 @@ torch.set_num_threads(14)
 
 
 def _parse_cli(argv):
-    """解析 `--seeds 3,4` 与 `--merge`。
+    """Parse `--seeds 3,4` and `--merge`.
 
-    为什么需要 `--merge`：一次完整跑（3 种子时实测 ~2950s，5 种子约 1200s 视机器负载）
-    若扩容种子数时不合并，就会把已算好的种子再算一遍。`--merge` 从既有
-    `results/loss_ladder.json` 读出 per_seed，只补跑缺的种子，最后按**并集**重算
-    汇总与判据（与 memory 里"抓取新结果必须与既有缓存合并再写回"同一条教训）。
+    Why `--merge` is needed: one full run (measured ~2950s at 3 seeds, ~1200s at 5 seeds
+    depending on machine load) -- if the seed count is expanded without merging, the
+    already-computed seeds would be recomputed. `--merge` reads per_seed from the existing
+    `results/loss_ladder.json`, only reruns the missing seeds, and finally recomputes the
+    summary and criteria over the **union** (the same lesson as in memory: "grabbing new
+    results must merge with the existing cache before writing back").
     """
     seeds = list(SEEDS)
     merge = False
@@ -104,12 +117,12 @@ def _parse_cli(argv):
         elif a.startswith("--seeds="):
             seeds = [int(x) for x in a.split("=", 1)[1].replace(",", " ").split()]
         else:
-            raise SystemExit("unknown arg %r (use --seeds a,b --merge)" % a)
+            raise SystemExit("unknown argument %r (use --seeds a,b --merge)" % a)
         i += 1
     return seeds, merge
 
 
-# ---------------------------------------------------------------- 度量
+# ---------------------------------------------------------------- metrics
 def sliced_w2(A, B, rng, n_proj=N_PROJ):
     A = np.asarray(A, dtype=np.float64)
     B = np.asarray(B, dtype=np.float64)
@@ -124,7 +137,7 @@ def sliced_w2(A, B, rng, n_proj=N_PROJ):
 
 
 def evaluate_full(net, seed):
-    """逐条件给出 ρ_j、覆盖、条件 sliced W2（按 sqrt(trVar(x1|c_j)) 归一）。"""
+    """Per-condition: ρ_j, coverage, conditional sliced W2 (normalized by sqrt(trVar(x1|c_j)))."""
     rng = np.random.default_rng(seed + 909)
     num, cov, csw = [], [], []
     for j in range(M.C):
@@ -145,7 +158,7 @@ def evaluate_full(net, seed):
                 cov_per_cond=[int(v) for v in cov])
 
 
-# ---------------------------------------------------------------- 训练
+# ---------------------------------------------------------------- training
 def _make_net(seed):
     torch.manual_seed(seed)
     return M.MLP(M.DIM + 1 + M.C, M.DIM)
@@ -168,19 +181,25 @@ def train_l2(seed, steps=None, tag="onestep_l2"):
 
 
 def train_chamfer(seed, steps=None, tag="onestep_chamfer"):
-    """非平衡双向 min-matching，**逐条件**做（与 train_balanced 的指派范围一致）。
+    """Unbalanced bidirectional min-matching, done **per condition** (matching the
+    assignment range of train_balanced).
 
-    与非平衡版唯一的区别是**指派不是双射**：每个目标各自找最近的生成样本，
-    每个生成样本各自找最近的目标样本；同一个生成样本可以被多个目标共用，
-    也可以完全不被使用。种群极限只约束**支撑集**，对权重不作任何要求。
+    The only difference from the unbalanced version is that the assignment is **not a
+    bijection**: each target finds its nearest generated sample, each generated sample
+    finds its nearest target sample; the same generated sample can be shared by multiple
+    targets, or not used at all. The population limit only constrains the **support set**
+    and imposes no requirement on the weights.
 
-    ---- 修正 (2026-09-16)：指派范围从「整批」改为「逐条件」 ----
-    初版在这里对**整个 batch** 取 argmin（不分条件），而 train_balanced 是逐条件
-    取匈牙利指派。于是 L2 与 L3 的差异有**两个**（是否平衡 AND 是否分条件），
-    无法把观测到的「支撑恢复、权重拉平」单独归因于非平衡性——这正是 Thm 4(L2)
-    要论证的那一点。改成逐条件后，L2 与 L3 只在「双射 / 非双射」上不同。
-    注：池化版的 min 取自更大的候选集，损失更小，是**更弱**的约束，因此这个修正
-    只会让 L2 的支撑约束更强，不会人为制造出支撑恢复。
+    ---- Fix (2026-09-16): assignment range changed from "whole batch" to "per condition" ----
+    The first version took argmin over the **entire batch** (ignoring conditions) here,
+    whereas train_balanced did per-condition Hungarian assignment. As a result L2 and L3
+    differed in **two** ways (balanced or not AND per-condition or not), so the observed
+    "support recovered, weights flattened" could not be attributed to unbalance alone --
+    which is precisely the point Thm 4(L2) argues. After switching to per-condition, L2
+    and L3 differ only in "bijection / non-bijection".
+    Note: the pooled version's min is taken over a larger candidate set, giving a smaller
+    loss and a **weaker** constraint, so this fix only makes L2's support constraint
+    stronger; it does not artificially manufacture support recovery.
     """
     steps = M.STEPS if steps is None else steps
     net = _make_net(seed)
@@ -193,8 +212,8 @@ def train_chamfer(seed, steps=None, tag="onestep_chamfer"):
         with torch.no_grad():
             Gn = G.detach().numpy().astype(np.float64)
             yn = y.astype(np.float64)
-            a1 = np.arange(len(x0))       # 目标 -> 本条件内最近的生成样本
-            a2 = np.arange(len(x0))       # 生成样本 -> 本条件内最近的目标
+            a1 = np.arange(len(x0))       # target -> nearest generated sample in this condition
+            a2 = np.arange(len(x0))       # generated sample -> nearest target in this condition
             for j in range(M.C):
                 idx = np.where(c == j)[0]
                 if len(idx) < 2:
@@ -213,10 +232,12 @@ def train_chamfer(seed, steps=None, tag="onestep_chamfer"):
 
 
 def train_balanced(seed, steps=None, tag="onestep_balanced"):
-    """平衡集合级：批内逐条件做匈牙利最优指派（双射），再对指派结果做 L2。
+    """Balanced set-level: per-condition in-batch Hungarian optimal assignment (bijection),
+    then L2 on the assignment result.
 
-    与非平衡版唯一的区别是**指派是双射**：每个生成样本恰好被用一次，
-    每个目标恰好被匹配一次。种群极限即 W_2^2(p_c, q_c)。
+    The only difference from the unbalanced version is that the assignment is a
+    **bijection**: each generated sample is used exactly once, each target is matched
+    exactly once. The population limit is then W_2^2(p_c, q_c).
     """
     steps = M.STEPS if steps is None else steps
     net = _make_net(seed)
@@ -244,7 +265,7 @@ def train_balanced(seed, steps=None, tag="onestep_balanced"):
     return net
 
 
-# ---------------------------------------------------------------- 主流程
+# ---------------------------------------------------------------- main flow
 def main(new_seeds, merge):
     t0 = time.time()
     out = os.path.join(ROOT, "results", "loss_ladder.json")
@@ -255,10 +276,10 @@ def main(new_seeds, merge):
             existing = json.load(f)
         require_merge_compatible(existing, protocol_id, out)
         out_all = dict(existing.get("per_seed", {}))
-        print("merge: 载入既有种子 %s" % sorted(out_all, key=int), flush=True)
+        print("merge: loading existing seeds %s" % sorted(out_all, key=int), flush=True)
     for sd in new_seeds:
         if str(sd) in out_all:
-            print("\nskip seed %d（结果已在报告中）" % sd, flush=True)
+            print("\nskip seed %d (result already in report)" % sd, flush=True)
             continue
         print("\n" + "#" * 70 + "\n# seed %d\n" % sd + "#" * 70, flush=True)
         out_all[str(sd)] = {}
@@ -275,7 +296,7 @@ def main(new_seeds, merge):
             print("    rho_j = %s" % np.round(r["rho_per_cond"], 3).tolist(), flush=True)
 
     seeds_all = sorted(int(k) for k in out_all)
-    print("\n参与汇总的种子: %s" % seeds_all, flush=True)
+    print("\nseeds included in summary: %s" % seeds_all, flush=True)
 
     def agg(name):
         v = [out_all[str(s)][name] for s in seeds_all]
@@ -291,9 +312,9 @@ def main(new_seeds, merge):
     S = {k: agg(k) for k in ("onestep_l2", "onestep_chamfer", "onestep_balanced")}
 
     print("\n" + "=" * 78)
-    print("损失形式阶梯（%d 种子平均）" % len(seeds_all))
+    print("loss-form ladder (%d-seed average)" % len(seeds_all))
     print("  %-18s %-14s %-8s %-10s %-10s %-10s"
-          % ("损失", "ρ", "覆盖/8", "disp(ρ_j)", "|ρ_j−1|", "cSW"))
+          % ("loss", "rho", "cov/8", "disp(rho_j)", "|rho_j-1|", "cSW"))
     print("-" * 78)
     for k, v in S.items():
         print("  %-18s %-14s %-8s %-10s %-10s %-10s"
@@ -317,10 +338,10 @@ def main(new_seeds, merge):
                else "PARTIAL" if sum(checks.values()) >= 4 else "FAIL")
     for k, v in checks.items():
         print("    %-32s %s" % (k, v))
-    print("  描述性比值（不进判据）: |rho_j-1| chamfer/balanced = %.2f×, cSW chamfer/balanced = %.2f×"
+    print("  descriptive ratios (not in criteria): |rho_j-1| chamfer/balanced = %.2f×, cSW chamfer/balanced = %.2f×"
           % (S["onestep_chamfer"]["rho_abs_err"] / max(S["onestep_balanced"]["rho_abs_err"], 1e-9),
              S["onestep_chamfer"]["csw"] / max(S["onestep_balanced"]["csw"], 1e-9)))
-    print("  VERDICT: %s      用时 %.0fs" % (verdict, time.time() - t0))
+    print("  VERDICT: %s       elapsed %.0fs" % (verdict, time.time() - t0))
     print("=" * 78)
 
     report = dict(theorem="loss ladder: pointwise L2 -> support only -> full law",
@@ -333,7 +354,7 @@ def main(new_seeds, merge):
                       PROTOCOL_FILES, merged=merge)
     with open(out, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
-    print("报告已写入 %s" % out)
+    print("report written to %s" % out)
 
 
 if __name__ == "__main__":

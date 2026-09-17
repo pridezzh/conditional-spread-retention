@@ -1,13 +1,18 @@
 # -*- coding: utf-8 -*-
-"""生成 paper/numbers_theory.tex：新理论部分所需的全部数值宏。
+"""Generate paper/numbers_theory.tex: all numeric macros needed by the new theory
+section.
 
-约定（与 make_tables.py 一致）
-------------------------------
-* 论文正文**不允许**出现手写的实验数字，一律用宏；
-* **LaTeX 控制序列只能含字母**——`\\RhoOne` 合法，`\\rho1` 是致命错误。
-  所以所有宏名里的数字都写成英文单词。
-* 源文件缺失时**跳过并记 warning**，不硬失败（便于分批跑实验）。
-* 每个宏都带 `% 来源: ...` 注释，正文中任何一个数都能追到 JSON 字段。
+Conventions (consistent with make_tables.py)
+--------------------------------------------
+* The paper body is **not allowed** to contain hand-written experimental numbers;
+  everything goes through macros;
+* **LaTeX control sequences may only contain letters** -- `\\RhoOne` is valid,
+  `\\rho1` is a fatal error. So all digits in macro names are spelled out as
+  English words.
+* When a source file is missing, **skip it and record a warning** rather than
+  failing hard (to allow running experiments in batches).
+* Every macro carries a `% source: ...` comment, so any number in the body can be
+  traced back to its JSON field.
 """
 import json
 import os
@@ -39,7 +44,8 @@ def load(rel):
 
 
 class Bag:
-    """收集 (宏名, 值, 说明)。值统一格式化为 4 位有效数字以内的字符串。"""
+    """Collect (macro name, value, note). Values are uniformly formatted as
+    strings with at most 4 significant figures."""
 
     def __init__(self):
         self.items = []
@@ -75,10 +81,12 @@ class Bag:
 
 
 def sigfigs(v, n=4):
-    """按 4 位有效数字输出。
+    """Output with 4 significant figures.
 
-    用 `%.4g` 而不是手算小数位：手算版本在 0.00299 这类数上会把有效位算成负数，
-    输出 "0"，把信息抹掉（实测过）。`%.4g` 对 1e-16 与 1e5 都自动切科学计数法。
+    Use `%.4g` rather than computing decimal places by hand: the hand-computed
+    version would compute a negative significant-figure count for numbers like
+    0.00299, output "0", and erase the information (observed in practice). `%.4g`
+    automatically switches to scientific notation for both 1e-16 and 1e5.
     """
     if v is None:
         return None
@@ -90,14 +98,16 @@ def sigfigs(v, n=4):
     if v != v:  # NaN
         return None
     s = ("%." + str(n) + "g") % v
-    # LaTeX 里 "1e-05" 不合法，统一写成 1\times10^{-5}。
+    # "1e-05" is invalid in LaTeX; always write it as 1\times10^{-5}.
     #
-    # 必须用 \ensuremath 包起来：`%.4g` 的阈值在 abs(v) < 1e-4 时切科学计数法，
-    # 而 `\times` 在**文本模式**下非法。这不是假想问题——5 种子重跑后
-    # rho 从 1.039e-4（输出 "0.0001039"，文本安全）变成 9.716e-5（输出
-    # "9.716\times 10^{-5}"），Table 1 的单元格是文本模式，于是在表末
-    # 报 "Missing $ inserted" / "Extra }, or forgotten $"。\ensuremath 让宏在
-    # 文本模式里自动进数学、在数学模式里当空操作，两种用法都安全。
+    # It must be wrapped in \ensuremath: `%.4g` switches to scientific notation
+    # when abs(v) < 1e-4, and `\times` is illegal in **text mode**. This is not a
+    # hypothetical problem -- after re-running with 5 seeds, rho changed from
+    # 1.039e-4 (output "0.0001039", text-safe) to 9.716e-5 (output
+    # "9.716\times 10^{-5}"); Table 1's cells are in text mode, so the table end
+    # reported "Missing $ inserted" / "Extra }, or forgotten $". \ensuremath makes
+    # the macro enter math automatically in text mode and act as a no-op in math
+    # mode, so both usages are safe.
     if "e" in s:
         mant, expo = s.split("e")
         expo = int(expo)
@@ -108,7 +118,7 @@ def sigfigs(v, n=4):
 def main():
     B = Bag()
 
-    # ------------------------------------------------ 不可能性：α 扫描
+    # ------------------------------------------------ impossibility: alpha sweep
     imp = load(os.path.join("logs", "verify_impossibility.json"))
     if imp:
         cur = imp["curve"]
@@ -131,7 +141,7 @@ def main():
     else:
         B.missing.append("verify_impossibility.json")
 
-    # ------------------------------------------------ 最小最大界
+    # ------------------------------------------------ minimax bounds
     mm = load(os.path.join("logs", "verify_minimax.json"))
     if mm:
         cb = mm.get("constant_baseline", {})
@@ -164,8 +174,9 @@ def main():
             for k in ("D", "sep8", "K_CH", "nn_dist", "kurtosis"):
                 if k not in lad[keys[0]]:
                     continue
-                # ladder[n][k] 两种形态都兼容：新版是 {"diff","noise","snr"}，
-                # 旧版直接是浮点数（那样就没有 snr，跳过）。
+                # ladder[n][k] is compatible with both shapes: the new version is
+                # {"diff","noise","snr"}, the old version is a bare float (in which
+                # case there is no snr, so skip).
                 first, last = lad[keys[0]][k], lad[keys[-1]][k]
                 if not (isinstance(first, dict) and isinstance(last, dict)):
                     continue
@@ -175,7 +186,8 @@ def main():
                       "sample_size_ladder[%s].%s.snr" % (keys[-1], k))
             B.add("LadderNFirst", keys[0], "smallest n")
             B.add("LadderNLast", keys[-1], "largest n")
-        # 与 ρ* 同尺度的统计量（M4 判据用的那三个）在各样本量档上的 |Δ| 最大值
+        # The maximum |delta| across sample sizes for the statistics on the same
+        # scale as rho* (the three used by the M4 criterion)
         ABS_KEYS = ("D", "nn_dist", "kurtosis")
         if lad:
             worst = 0.0
@@ -191,7 +203,7 @@ def main():
     else:
         B.missing.append("verify_minimax.json")
 
-    # ------------------------------------------------ 条件受控（只改耦合）
+    # ------------------------------------------------ conditional control (coupling only)
     ct = load(os.path.join("logs", "verify_conditional_theory.json"))
     if ct:
         def g(d, *ks):
@@ -214,7 +226,7 @@ def main():
             B.add("CondRhoDet", sigfigs(row.get("rho_det")), "knn_sweep[k=%s].rho_det" % bk)
         B.add("CondContrast", sigfigs(g(ct, "best_contrast", "ratio")), "best_contrast.ratio")
         B.add("CondKnnK", bk, "best_contrast.k")
-        # 1/k 律：k·ρ̂_ind 应当≈1
+        # 1/k law: k * rho_hat_ind should be ~ 1
         for e in (ct.get("knn_sweep") or []):
             kk = e.get("k")
             word = {1: "One", 2: "Two", 5: "Five", 10: "Ten", 20: "Twenty",
@@ -228,7 +240,7 @@ def main():
     else:
         B.missing.append("verify_conditional_theory.json")
 
-    # ------------------------------------------------ 多步（精确速度场）
+    # ------------------------------------------------ multistep (exact velocity field)
     ms = load(os.path.join("logs", "verify_multistep_theory.json"))
     if ms:
         B.add("MSEndpointErr", sigfigs(ms.get("endpoint_identity_max_err")),
@@ -246,7 +258,7 @@ def main():
     else:
         B.missing.append("verify_multistep_theory.json")
 
-    # ------------------------------------------------ 方法族地图
+    # ------------------------------------------------ method-family map
     mmap = load(os.path.join("results", "method_map.json"))
     if mmap:
         S = mmap["summary"]
@@ -271,7 +283,7 @@ def main():
     else:
         B.missing.append("method_map_chamfer.json")
 
-    # ------------------------------------------------ 损失阶梯
+    # ------------------------------------------------ loss ladder
     ll = load(os.path.join("results", "loss_ladder.json"))
     if ll:
         S = ll["summary"]
@@ -292,9 +304,12 @@ def main():
             B.add("LLRatioCsw", sigfigs(a["csw"] / max(b["csw"], 1e-9)), "chamfer/balanced cSW")
             B.add("LLRatioDisp", sigfigs(a["rho_disp"] / max(b["rho_disp"], 1e-9)),
                   "chamfer/balanced std_j(rho_j)")
-        # 非平衡损失"只恢复支撑集"的指纹：生成的逐条件展布趋于常数。
-        # 指标 = 生成的 trVar_j (:= rho_j * trVar_j^true) 的条件间变异系数 CV，
-        # 对照真实 trVar_j 的 CV。二者越接近，说明模型越没有区分条件。
+        # The signature that unbalanced loss "only recovers the support": the
+        # generated per-condition spread tends toward a constant.
+        # Metric = the coefficient of variation (CV) across conditions of the
+        # generated trVar_j (:= rho_j * trVar_j^true), compared against the CV of
+        # the true trVar_j. The closer the two, the less the model discriminates
+        # between conditions.
         tv = ll.get("tr_var_cond")
         if tv and ll.get("per_seed"):
             import statistics as _st
@@ -320,10 +335,11 @@ def main():
     else:
         B.missing.append("loss_ladder.json")
 
-    # ------------------------------------------------ 池化对照（Chamfer，跨条件取 argmin）
-    # 论文需要两行 Chamfer：池化版（实践写法）与逐条件版（Thm 4 的设定）。
-    # 两者之差把"池化"这一个变量单独隔离出来；这正是"支撑恢复、权重自由"
-    # 这一指纹的真正来源。
+    # ------------------------------------------------ pooled comparison (Chamfer, argmin across conditions)
+    # The paper needs two Chamfer rows: the pooled version (the practical
+    # implementation) and the per-condition version (the setup of Thm 4).
+    # Their difference isolates the single variable "pooling"; this is the true
+    # source of the "support recovered, weights free" signature.
     cp = load(os.path.join("results", "chamfer_pooled.json"))
     if cp:
         import statistics as _st
@@ -350,7 +366,7 @@ def main():
     else:
         B.missing.append("chamfer_pooled.json")
 
-    # ------------------------------------------------ MNIST 真实数据确认
+    # ------------------------------------------------ MNIST real-data confirmation
     mn = load(os.path.join("results", "mnist_collapse.json"))
     if mn:
         ms = mn["summary"]
@@ -372,7 +388,8 @@ def main():
               "mnist_collapse: summary.B_dependent_meandep0.mu_err.mean")
         B.add("MnistNSeeds", len(mn.get("per_seed", {})),
               "mnist_collapse: len(per_seed)")
-        # 跨种子离散度：报告量（rho_trained/csw1/dcor）里最大的标准差及其归属
+        # Cross-seed dispersion: the largest standard deviation among the reported
+        # quantities (rho_trained/csw1/dcor) and which one it belongs to
         best = None
         for cfg in ("A_independent", "B_dependent_meandep0", "C_ot",
                     "D_sorted_meanmax"):
@@ -385,10 +402,11 @@ def main():
         if best:
             B.add("MnistMaxStd", sigfigs(best[0]),
                   "mnist_collapse: max summary std over rho_trained/csw1/dcor")
-            # LaTeX 文本模式禁裸 _ 与裸 .：把 "A_independent.dcor" 转成可排版形式
+            # LaTeX text mode forbids bare _ and bare .: convert "A_independent.dcor"
+            # into a typesettable form
             B.add("MnistMaxStdOf", best[1].replace("_", "-").replace(".", ", "),
                   "mnist_collapse: which quantity has the max std")
-        # 训练耗时（逐种子 seconds 的均值）：D 排序配对 vs C 匈牙利指派
+        # Training time cost (mean per-seed seconds): D sorted pairing vs C Hungarian assignment
         for cfg, short in (("C_ot", "C"), ("D_sorted_meanmax", "D")):
             if not mn.get("per_seed"):
                 continue
@@ -400,7 +418,7 @@ def main():
     else:
         B.missing.append("mnist_collapse.json")
 
-    # ------------------------------------------------ Λ 负面结果
+    # ------------------------------------------------ Lambda negative results
     vd = load(os.path.join("logs", "validate_deficit.json"))
     if vd:
         pop = vd.get("R6_population") or {}
@@ -415,10 +433,12 @@ def main():
             B.add("Lam" + short, sigfigs(v), "validate_deficit: R6_population.%s" % k)
         ceil = vd.get("ceiling")
         B.add("LamCeiling", sigfigs(ceil), "validate_deficit: ceiling")
-        # 【重要】ceiling 字段本身就是解析式 1-2*sqrt(2/pi)+1，所以
-        # |ceiling - theory| 恒等于 0，报出来等于什么都没说（曾经的 bug：
-        # 论文写成"reproduced to 0"，读起来像精确复现，实际只是同义反复）。
-        # 真正有信息量的是**估计量**与解析上界之差 R1_ceiling[*].abs_err。
+        # [IMPORTANT] the ceiling field is itself the analytic expression
+        # 1-2*sqrt(2/pi)+1, so |ceiling - theory| is identically 0; reporting it
+        # says nothing (a past bug: the paper wrote "reproduced to 0", which reads
+        # like an exact reproduction but is actually just tautology).
+        # What is actually informative is the difference between the **estimator**
+        # and the analytic upper bound, R1_ceiling[*].abs_err.
         r1 = vd.get("R1_ceiling") or []
         errs = [e.get("abs_err") for e in r1 if isinstance(e.get("abs_err"), (int, float))]
         if errs:
@@ -428,14 +448,16 @@ def main():
             n_max = max(e.get("n") for e in r1 if e.get("n") is not None)
             B.add("LamCeilingNMin", n_min, "R1 smallest sample size")
             B.add("LamCeilingNMax", n_max, "R1 largest sample size")
-        # 跨样本量一致性（R2）：同一形状在 n=2000 与 n=200000 下的差
+        # Cross-sample-size consistency (R2): the difference for the same shape at
+        # n=2000 vs n=200000
         r2 = vd.get("R2_consistency") or []
         d2 = [e.get("abs_diff") for e in r2 if isinstance(e.get("abs_diff"), (int, float))]
         if d2:
             B.add("LamConsistencyMaxDiff", sigfigs(max(d2)),
                   "max over R2_consistency[*].abs_diff")
-        # 秩相关：R4 = 与精确 OT 的汇聚效度（论文引用的是这一个）；
-        # R5 = 与"高斯修补的错误质量"的构念效度。两者是不同的东西，不要混用。
+        # Rank correlation: R4 = convergence validity vs exact OT (this is the one
+        # cited in the paper); R5 = construct validity vs "Gaussian-patch erroneous
+        # quality". The two are different things; do not mix them.
         rc4 = vd.get("R4_rank_corr")
         rc5 = vd.get("R5_rank_corr")
         if isinstance(rc4, (int, float)):
@@ -450,9 +472,9 @@ def main():
     else:
         B.missing.append("validate_deficit.json")
 
-    # ------------------------------------------------ 写文件
-    lines = ["% 自动生成，勿手改。由 code/analysis/make_theory_macros.py 从 logs/ 与 results/ 读出。",
-             "% 每个宏的来源都写在行末注释里。"]
+    # ------------------------------------------------ write file
+    lines = ["% auto-generated, do not edit by hand. Read from logs/ and results/ by code/analysis/make_theory_macros.py.",
+             "% the source of every macro is recorded in the end-of-line comment."]
     for name, val, note in B.items:
         lines.append("\\newcommand{\\%s}{%s}  %% %s" % (name, val, note))
     out = os.path.join(ROOT, "paper", "numbers_theory.tex")

@@ -1,55 +1,68 @@
 # -*- coding: utf-8 -*-
-r"""不可能性定理的**最小最大**形式：纯数据统计量的最坏风险恰好 = 1/2。
+r"""The **minimax** form of the impossibility theorem: the worst-case risk of a pure
+data statistic is exactly 1/2.
 
 --------------------------------------------------------------------
-从"信息不足"到"精确等于 1/2"
+From "insufficient information" to "exactly 1/2"
 --------------------------------------------------------------------
-`verify_impossibility.py` 只证明了定性版本：ρ\* 扫遍 [0,1] 而数据分布不动，
-所以纯数据量"信息不足"。但"信息不足"是个软说法，审稿人可以追问：
-**究竟差多少？** 本脚本把它变成一个**可引用的数字**。
+`verify_impossibility.py` only proved the qualitative version: rho* sweeps [0,1] while
+the data distribution stays fixed, so a pure-data quantity has "insufficient information".
+But "insufficient information" is a soft claim; a reviewer can press: **how insufficient,
+exactly?** This script turns it into a **citable number**.
 
-【定理（最小最大形式）】设 Π = {π_α : α ∈ [0,1]} 为 α-插值耦合族，
-所有成员诱导同一个边缘律 p(c,x₁)。令 𝒜 为**任意**只依赖 n 个
-(c,x₁) 样本的估计量（可随机化，可"无所不知"——即使它精确知道 p(c,x₁)）。则
+[Theorem (minimax form)] Let Pi = {pi_alpha : alpha in [0,1]} be the alpha-interpolation
+coupling family, all members inducing the same marginal law p(c,x_1). Let A be **any**
+estimator depending only on n (c,x_1) samples (it may be randomized, may be
+"all-knowing" -- even if it knows p(c,x_1) exactly). Then
 
-    inf_𝒜  sup_{α∈[0,1]}  E_α | 𝒜 − ρ\*(α) |  =  1/2
+    inf_A  sup_{alpha in [0,1]}  E_alpha | A - rho*(alpha) |  =  1/2
 
-且最优解就是**常数 1/2**。即：**在这族问题上，数据的价值恰好为零。**
+and the optimal solution is simply the **constant 1/2**. I.e.: **on this family of
+problems, the value of the data is exactly zero.**
 
-证明（五行，无技术条件）：
-  * 𝒜 的分布在所有 α 下**相同**（边缘律相同），故 ā := E[𝒜] 与 α 无关；
-  * Jensen：E_α|𝒜 − α²| ≥ |ā − α²|，故 sup_α ≥ sup_α |ā − α²| ≥ max(|ā|, |ā−1|) ≥ 1/2；
-  * 取 𝒜 ≡ 1/2 达到 sup_α |1/2 − α²| = 1/2。∎
+Proof (five lines, no technical conditions):
+  * A's distribution is **the same** under all alpha (same marginal law), so a_bar := E[A] is independent of alpha;
+  * Jensen: E_alpha|A - alpha^2| >= |a_bar - alpha^2|, so sup_alpha >= sup_alpha |a_bar - alpha^2| >= max(|a_bar|, |a_bar-1|) >= 1/2;
+  * take A == 1/2 to achieve sup_alpha |1/2 - alpha^2| = 1/2. Q.E.D.
 
-注意 sup 里 α 取遍 [0,1] 而非只在网格上：0 与 1 都在族内，所以界是 1/2 而不是更小。
-**n = ∞ 也不改善**——缺陷是信息论的，不是统计的。
-
---------------------------------------------------------------------
-本脚本验什么
---------------------------------------------------------------------
-定理的**经验内容**只有一条：纯数据统计量在 α 上确实是常数。所以：
-
-  M1 统计量**不变性**：7 个纯数据统计量（含两个本文自己提出的 D̂、Λ̂，
-     以及 5 个文献里常见的"多模态/结构"分数），
-     跨 α 的最大相对偏离都 < ε。（这是定理前提的经验落实。）
-  M2 **常数预测器基线**：min_c max_α |c − α²| = 0.5（细网格 1001 点数值确认），
-     即"什么都不做"的最好成绩就是 0.5。任何纯数据量必须以它为基准。
-  M3 **配对侧对照**：用上了耦合信息（成对的 (x₀,x₁)）的 ρ̂，对 α² 的
-     平均绝对差 = MAD（来自 verify_impossibility 的实测值）。
-     于是 **0.500 → MAD** 就是"耦合信息"这一份额外信息的全部价值。
-  M4 **样本量救不了**：把纯数据统计量的样本量从 10³ 加到 1.6×10⁴，
-     其在 α=0 与 α=1 之间的**差距不下降**（始终停在噪声水平）——
-     对照 ρ̂ 随配对样本数增加而收敛。
+Note that the sup ranges over alpha in [0,1], not only the grid: 0 and 1 are both in the
+family, so the bound is 1/2 and not smaller. **n = infinity does not help either** --
+the deficiency is information-theoretic, not statistical.
 
 --------------------------------------------------------------------
-为什么不做"oracle 仿射标定后再比较"
+What this script verifies
 --------------------------------------------------------------------
-一个诱人的做法：给每个纯数据统计量做一次最小二乘仿射标定 a·S+b（允许它看过
-ρ\*(α)=α²），再报最坏误差。这在**有限样本**上是陷阱：S 在 α 上的**噪声**
-（D̂ 的跨 α 标准差约 0.001）会被 LS 当成信号，拟合出斜率 a ~ 10²–10³，
-在**训练集（这 5 个 α）**上把误差压到 0.5 以下——那只是拟合噪声。
-定理说的是**总体**量：总体的 S(α) 是常数，任何标定都是常数，最坏误差 ≥ 1/2。
-所以本脚本只验"不变性"这条前提，把 1/2 留给定理。这是本文件最重要的一条纪律。
+The **empirical content** of the theorem is just one statement: pure-data statistics are
+truly constant across alpha. So:
+
+  M1 **invariance** of statistics: for the 7 pure-data statistics (including the two
+     proposed in this paper, D_hat and Lambda_hat, and 5 common "multimodal/structure"
+     scores from the literature), the max relative deviation across alpha is < epsilon.
+     (This is the empirical corroboration of the theorem's premise.)
+  M2 **constant-predictor baseline**: min_c max_alpha |c - alpha^2| = 0.5 (confirmed
+     numerically on a fine 1001-point grid), i.e. the best "do nothing" score is 0.5.
+     Any pure-data quantity must be measured against it.
+  M3 **paired-side control**: the rho_hat that uses coupling information (paired (x_0,x_1))
+     has mean absolute deviation from alpha^2 = MAD (the measured value from
+     verify_impossibility). Thus **0.500 -> MAD** is the entire value of the extra
+     "coupling information".
+  M4 **sample size cannot save it**: increasing the sample size of a pure-data statistic
+     from 10^3 to 1.6x10^4, the **gap** between alpha=0 and alpha=1 does **not** decrease
+     (it stays at the noise level) -- in contrast, rho_hat converges as the number of
+     paired samples grows.
+
+--------------------------------------------------------------------
+Why we do NOT do "oracle affine calibration, then compare"
+--------------------------------------------------------------------
+A tempting approach: give each pure-data statistic one least-squares affine calibration
+a*S+b (allowing it to have seen rho*(alpha)=alpha^2), then report the worst error. This
+is a trap **in finite samples**: the **noise** of S across alpha (the cross-alpha std of
+D_hat is about 0.001) is taken by LS as signal, fitting a slope a ~ 10^2--10^3, and on
+the **training set (these 5 alphas)** drives the error below 0.5 -- which only fits the
+noise. The theorem speaks of the **population** quantity: the population S(alpha) is
+constant, any calibration is constant, and the worst error >= 1/2. So this script only
+verifies the premise "invariance", leaving 1/2 to the theorem. This is the single most
+important discipline of this file.
 """
 import json
 import os
@@ -83,29 +96,30 @@ ALPHAS = VI.ALPHAS
 SEEDS = VI.SEEDS
 N_QUERY = 2000
 
-# 纯数据统计量不变性的检验方式：单因素 ANOVA（组 = α，重复 = 种子）
+# how to test invariance of pure-data statistics: one-way ANOVA (groups = alpha, repeats = seeds)
 ALPHA_P = 0.05
 M1_SEEDS = (0, 1, 2, 3, 4)
-# M4 用的样本量阶梯与统计量（跳过高斯亏损，它最贵）
+# sample-size ladder and statistics for M4 (skip the Gaussian deficit, it is the most expensive)
 N_LADDER = (1000, 4000, 16000)
 M4_SEEDS = (0, 1, 2)
 M4_KEYS = ("D", "sep8", "K_CH", "nn_dist", "kurtosis")
-# M4 的判据只用在**与 ρ* 同处 [0,1] 尺度**的统计量上。
+# M4's criterion is only applied to statistics on the **same [0,1] scale as rho***.
 #
-# 为什么不把 sep8 / K_CH 放进绝对阈值判据：它们是**比值尺度**（典型值 ~35 与 ~8），
-# 对它们设绝对阈值 0.01 毫无意义——它们的 α-无关性已由 M1 的 ANOVA（尺度无关）确立。
-# 把它们排除是**先验的尺度区分**，不是看到结果后挑好看的。
+# Why sep8 / K_CH are not put under the absolute-threshold criterion: they are **ratio-scale**
+# (typical values ~35 and ~8), so an absolute threshold of 0.01 is meaningless -- their
+# alpha-independence is already established by the scale-free ANOVA in M1.
+# Excluding them is a **prior scale distinction**, not cherry-picking nice-looking results.
 M4_KEYS_ABS = ("D", "nn_dist", "kurtosis")
-# 判据：|S(1) − S(0)| 的最大值 < ABS_MAX。ρ* 在这个族里扫过的范围是 1.0，
-# 所以 ABS_MAX = 0.01 的含义是「可检出的 α-依赖不超过待预测效应量的 1%」。
-SNR_MAX = 2.0          # 仍照报，但只作描述性数字（SNR 变大只说明噪声变小，不说明有信号）
+# Criterion: max |S(1) - S(0)| < ABS_MAX. rho* sweeps a range of 1.0 in this family,
+# so ABS_MAX = 0.01 means "detectable alpha-dependence is at most 1% of the effect size to predict".
+SNR_MAX = 2.0          # still reported, but only as a descriptive number (a larger SNR only means less noise, not that there is signal)
 ABS_MAX = 0.01
-EPS_REL = 0.05          # 仅作**描述性**展示，不进判据
+EPS_REL = 0.05          # only for **descriptive** display, not used in criteria
 
 
-# ---------------------------------------------------------------- 纯数据统计量
+# ---------------------------------------------------------------- pure-data statistics
 def kmeans_pp_init(Z, Kc, rng):
-    """k-means++ 初始化。"""
+    """k-means++ initialization."""
     n = len(Z)
     mu = [Z[int(rng.integers(n))]]
     d2 = ((Z - mu[0]) ** 2).sum(1)
@@ -120,11 +134,13 @@ def kmeans_pp_init(Z, Kc, rng):
 
 
 def kmeans(Z, Kc, rng, iters=100, restarts=3):
-    """Lloyd + k-means++ + 多次重启取最小 inertia。
+    """Lloyd + k-means++ + multiple restarts keeping the minimum inertia.
 
-    **为什么必须重启**：初版用随机初始化，同一分布上 sep8 能从 15.3 跳到 36.4
-    （跨种子），把"不变性"检验整个毁掉——那个"偏离"是优化器的噪声，不是 α 的信号。
-    重启 3 次后该统计量的种子间变异降一个量级。
+    **Why restarts are necessary**: the first version used random initialization, and on
+    the same distribution sep8 could jump from 15.3 to 36.4 across seeds, wrecking the
+    "invariance" test entirely -- that "deviation" is optimizer noise, not an alpha
+    signal. After 3 restarts the cross-seed variation of this statistic drops by an order
+    of magnitude.
     """
     n = len(Z)
     Kc = min(Kc, n)
@@ -153,7 +169,7 @@ def kmeans(Z, Kc, rng, iters=100, restarts=3):
 
 
 def ch_index(Z, Kc, rng):
-    """Calinski--Harabasz：越大越该分这么多簇。"""
+    """Calinski--Harabasz: larger means more reason to split into this many clusters."""
     n = len(Z)
     if Kc < 2 or Kc >= n:
         return 0.0
@@ -171,7 +187,7 @@ def k_ch(Z, rng, kmax=10):
 
 
 def sep8(Z, rng, Kc=None):
-    """K=8 的 k-means 簇间/簇内方差比（文献里最常见的"多模态分数"形态）。"""
+    """k-means between/within variance ratio at K=8 (the most common form of "multimodal score" in the literature)."""
     Kc = K if Kc is None else Kc
     n = len(Z)
     if Kc < 2 or Kc >= n:
@@ -205,9 +221,10 @@ def tr_var(a):
 
 
 def data_only_stats(Y_by_cond, rng, with_lambda=True):
-    """只吃 {(c_i, x1_i)}，绝不吃 x0，也绝不吃任何耦合信息。
+    """Consumes only {(c_i, x1_i)}, never x0, and never any coupling information.
 
-    with_lambda=False 时跳过高斯亏损 Λ（它最贵），M4 的样本量阶梯用它。
+    When with_lambda=False it skips the Gaussian deficit Lambda (the most expensive part);
+    M4's sample-size ladder uses this.
     """
     Yall = np.stack(Y_by_cond)
     out = {}
@@ -227,16 +244,19 @@ def data_only_stats(Y_by_cond, rng, with_lambda=True):
     return out
 
 
-# ---------------------------------------------------------------- 不变性的正确检验
+# ---------------------------------------------------------------- the correct test of invariance
 def anova_alpha_effect(tab):
-    """单因素方差分析：组 = α，重复 = 种子。返回 (F, p, 相对效应量)。
+    """One-way ANOVA: groups = alpha, repeats = seeds. Returns (F, p, relative effect size).
 
-    **为什么必须用 ANOVA 而不是"固定相对阈值"。**
-    不同统计量的自身噪声差两个数量级：D̂ 跨种子的相对波动 ~0.3%，
-    而 sep8（k-means 簇间/簇内比）在**同一分布**上跨种子能差 2 倍以上。
-    用统一的 5% 阈值去卡，等于对噪声大的统计量判它"有信号"，对噪声小的判它"没信号"
-    ——检验的是噪声，不是 α 效应。ANOVA 用**自身种子间方差**做分母，
-    问的是"α 造成的变异是否超过重复采样的变异"，这才是不变性的正确形式。
+    **Why ANOVA must be used instead of a "fixed relative threshold".**
+    Different statistics differ in their own noise by two orders of magnitude: the
+    cross-seed relative fluctuation of D_hat is ~0.3%, while sep8 (the k-means
+    between/within ratio) can differ by more than 2x across seeds on the **same
+    distribution**. Applying a uniform 5% threshold amounts to declaring "has signal" for
+    noisy statistics and "no signal" for quiet ones -- testing the noise, not the alpha
+    effect. ANOVA uses the **own cross-seed variance** as its denominator, asking
+    "does the variation caused by alpha exceed the variation from repeated sampling",
+    which is the correct form of invariance.
     """
     groups = [np.asarray(tab[a], dtype=np.float64) for a in ALPHAS]
     groups = [g for g in groups if len(g) > 1]
@@ -244,7 +264,7 @@ def anova_alpha_effect(tab):
         return float("nan"), float("nan"), float("nan")
     F, p = f_oneway(*groups)
     gm = float(np.mean(np.concatenate(groups)))
-    # 相对效应量：α 造成的组间标准差 / 总水平
+    # relative effect size: std across groups caused by alpha / overall level
     means = np.array([g.mean() for g in groups])
     between = float(means.std(ddof=1))
     return float(F), float(p), between / max(abs(gm), 1e-12)
@@ -253,7 +273,7 @@ def anova_alpha_effect(tab):
 STAT_KEYS = ("D", "Lambda", "K_CH", "nn_dist", "sep8", "kurtosis", "trVar_marginal")
 
 
-# ---------------------------------------------------------------- M2：常数基线
+# ---------------------------------------------------------------- M2: constant baseline
 def minimax_constant(n_grid=1001):
     a = np.linspace(0.0, 1.0, n_grid)
     tgt = a ** 2
@@ -266,29 +286,28 @@ def minimax_constant(n_grid=1001):
     return float(cs[i]), float(w[i])
 
 
-# ---------------------------------------------------------------- 主流程
+# ---------------------------------------------------------------- main flow
 def main():
     t0 = time.time()
     print("=" * 78)
-    print("不可能性定理 · 最小最大形式")
-    print("  定理：inf_A sup_α E|A − ρ*(α)| = 1/2，最优解即常数 1/2")
-    print("  本脚本验定理的**经验前提**：7 个纯数据统计量在 α 上确实是常数")
+    print("Impossibility theorem - minimax form")
+    print("  theorem: inf_A sup_alpha E|A - rho*(alpha)| = 1/2, optimal solution is the constant 1/2")
+    print("  this script verifies the theorem's **empirical premise**: the 7 pure-data statistics are truly constant across alpha")
     print("=" * 78)
 
-    # ---------- M2（纯数值，先算） ----------
+    # ---------- M2 (pure numerics, compute first) ----------
     cstar, wstar = minimax_constant()
-    print("\n[M2] 常数预测器基线：min_c max_α |c − α²| = %.4f，在 c = %.4f 处取到"
-          % (wstar, cstar))
-    print("     （细网格 1001 点；理论值 0.5 / 0.5。这就是'什么都不做'的最好成绩）")
+    print("\n[M2] Constant-predictor baseline: min_c max_alpha |c - alpha^2| = %.4f, attained at c = %.4f" % (wstar, cstar))
+    print("     (fine 1001-point grid; theoretical value 0.5 / 0.5. This is the best 'do nothing' score)")
 
-    # ---------- M1：不变性 ----------
-    print("\n[M1] 7 个纯数据统计量跨 α 的不变性（%d 个种子，单因素 ANOVA）" % len(M1_SEEDS))
+    # ---------- M1: invariance ----------
+    print("\n[M1] Invariance of 7 pure-data statistics across alpha (%d seeds, one-way ANOVA)" % len(M1_SEEDS))
     grid = {k: {a: [] for a in ALPHAS} for k in STAT_KEYS}
     for sd in M1_SEEDS:
         print("  ---- seed %d ----" % sd, flush=True)
         for a in ALPHAS:
             rng = np.random.default_rng(1000 * (sd + 1) + int(a * 100) + 7)
-            # 与 verify_impossibility **同一套** α-耦合样本生成
+            # **same** alpha-coupling sample generation as verify_impossibility
             Y = []
             for j in range(C):
                 _, x1 = VI.sample_alpha(N_QUERY, j, a, rng)
@@ -301,60 +320,60 @@ def main():
                      st["sep8"], st["kurtosis"]), flush=True)
 
     mean = {k: {a: float(np.mean(grid[k][a])) for a in ALPHAS} for k in STAT_KEYS}
-    print("\n  %-16s %s" % ("统计量", "".join("α=%.2f      " % a for a in ALPHAS)))
+    print("\n  %-16s %s" % ("statistic", "".join("α=%.2f      " % a for a in ALPHAS)))
     print("  " + "-" * 74)
     for k in STAT_KEYS:
         print("  %-16s %s" % (k, "".join("%-12.4f" % mean[k][a] for a in ALPHAS)))
     print("  " + "-" * 74)
 
-    # 描述性：相对偏离（**不进判据**，只作展示）
+    # descriptive: relative deviation (**not used in criteria**, shown only)
     dev = {}
     for k in STAT_KEYS:
         base = mean[k][ALPHAS[0]]
         scale = max(abs(base), 1e-9)
         dev[k] = float(max(abs(mean[k][a] - base) for a in ALPHAS) / scale)
-    print("\n  描述性：相对偏离 max_α |S(α) − S(0)| / |S(0)|（不进判据，因未对噪声归一）")
+    print("\n  descriptive: relative deviation max_alpha |S(alpha) - S(0)| / |S(0)| (not in criteria, since not normalized by noise)")
     for k in STAT_KEYS:
         print("    %-16s %.5f" % (k, dev[k]))
 
-    # 判据：单因素 ANOVA（组 = α，重复 = 种子）
-    print("\n  判据：单因素 ANOVA，H0 = “S 与 α 无关”，显著水平 %.2f" % ALPHA_P)
+    # criterion: one-way ANOVA (groups = alpha, repeats = seeds)
+    print("\n  criterion: one-way ANOVA, H0 = 'S independent of alpha', significance level %.2f" % ALPHA_P)
     anova = {}
     for k in STAT_KEYS:
         F, p, rel = anova_alpha_effect(grid[k])
         anova[k] = dict(F=F, p=p, rel_effect=rel)
-        tag = "不显著（不变）" if p == p and p > ALPHA_P else "显著"
-        print("    %-16s F=%-10.3f p=%-10.4f α-效应(相对)=%-9.5f  %s"
+        tag = "not significant (invariant)" if p == p and p > ALPHA_P else "significant"
+        print("    %-16s F=%-10.3f p=%-10.4f alpha-effect(rel)=%-9.5f  %s"
               % (k, F, p, rel, tag))
     M1 = bool(all(anova[k]["p"] == anova[k]["p"] and anova[k]["p"] > ALPHA_P
                   for k in STAT_KEYS))
-    # 每个统计量的自身噪声（种子间 CV），说明它能不能当诊断量
+    # each statistic's own noise (cross-seed CV), indicating whether it can serve as a diagnostic
     cv = {}
     for k in STAT_KEYS:
         vals = np.concatenate([np.asarray(grid[k][a], dtype=np.float64) for a in ALPHAS])
         cv[k] = float(vals.std(ddof=1) / max(abs(vals.mean()), 1e-12))
-    print("\n  各统计量的种子间变异系数 CV（越大越不能当诊断量）：")
+    print("\n  cross-seed coefficient of variation CV of each statistic (larger = worse as a diagnostic):")
     for k in STAT_KEYS:
         print("    %-16s %.4f" % (k, cv[k]))
 
-    # ---------- M3：配对侧对照 ----------
+    # ---------- M3: paired-side control ----------
     p = os.path.join(ROOT, "logs", "verify_impossibility.json")
     rho_mad = float("nan")
     if os.path.exists(p):
         with open(p, encoding="utf-8") as f:
             rho_mad = float(json.load(f)["deviations"]["pred_mad"])
-    print("\n[M3] 配对侧（用上了耦合信息）的 ρ̂：对 α² 的平均绝对差 MAD = %.4f" % rho_mad)
-    print("     纯数据侧最坏误差 = %.4f（= 常数基线）  →  比值 %.1f×"
+    print("\n[M3] Paired side (uses coupling information) rho_hat: mean absolute deviation from alpha^2 MAD = %.4f" % rho_mad)
+    print("     pure-data worst error = %.4f (= constant baseline)  ->  ratio %.1fx"
           % (wstar, (wstar / rho_mad) if rho_mad > 0 else float("nan")))
 
-    # ---------- M4：样本量救不了 ----------
-    print("\n[M4] 加大样本量能否救纯数据侧？")
-    print("     看 α=0 与 α=1 之间的差 |Δ|（这两侧的 ρ* 相差 1.000），")
-    print("     并同时给出用**自身种子间噪声**归一的 SNR。")
-    print("     注意：若 S 的总体值真的依赖 α，|Δ| 应随 n 收敛到一个非零常数；")
-    print("     若总体值不依赖 α（定理所说），|Δ| 只是噪声，随 n 按 1/√n 缩小。")
-    print("     所以判据看 |Δ| 的绝对大小（相对待预测效应量 1.0），不看 SNR——")
-    print("     SNR 变大只说明噪声变小到能看见那个 ~0.002 的残差，不说明有信号。")
+    # ---------- M4: sample size cannot save it ----------
+    print("\n[M4] Can increasing the sample size save the pure-data side?")
+    print("     look at the gap |Delta| between alpha=0 and alpha=1 (rho* differs by 1.000 across these two sides),")
+    print("     and also report the SNR normalized by the **own cross-seed noise**.")
+    print("     note: if the population value of S truly depends on alpha, |Delta| should converge to a nonzero constant with n;")
+    print("     if the population value does not depend on alpha (as the theorem says), |Delta| is just noise, shrinking as 1/sqrt(n) with n.")
+    print("     so the criterion looks at the absolute magnitude of |Delta| (relative to the effect size to predict, 1.0), not the SNR --")
+    print("     a larger SNR only means the noise shrank enough to see that ~0.002 residual, not that there is signal.")
     ladder = {}
     for n in N_LADDER:
         g = {k: {0.0: [], 1.0: []} for k in M4_KEYS}
@@ -378,16 +397,16 @@ def main():
         print("    n=%-7d %s" % (n, "  ".join("%s: |Δ|=%.4f SNR=%.2f"
                                               % (k, row[k]["diff"], row[k]["snr"])
                                               for k in M4_KEYS)))
-    # 判据（只用在 [0,1] 尺度的统计量上）：|S(1)−S(0)| < 0.01 = 待预测效应量 1.0 的 1%
+    # criterion (only on [0,1]-scale statistics): |S(1)-S(0)| < 0.01 = 1% of the effect size to predict (1.0)
     flat = {k: bool(all(ladder[str(n)][k]["diff"] < ABS_MAX for n in N_LADDER))
             for k in M4_KEYS_ABS}
-    print("    判据（与 ρ* 同尺度的统计量，各档 |S(1)−S(0)| < %.2f，"
-          "即不超过待预测效应量 1.0 的 %.0f%%）：%s"
+    print("    criterion (statistics on the same scale as rho*, each ladder |S(1)-S(0)| < %.2f, "
+          "i.e. at most %.0f%% of the effect size 1.0 to predict): %s"
           % (ABS_MAX, ABS_MAX * 100, json.dumps(flat, ensure_ascii=False)))
     worst_abs = max(ladder[str(n)][k]["diff"] for n in N_LADDER for k in M4_KEYS_ABS)
-    print("    实测最坏 |S(1)−S(0)| = %.4f  →  是待预测效应量 1.0 的 %.2f%%"
+    print("    measured worst |S(1)-S(0)| = %.4f  ->  %.2f%% of the effect size 1.0 to predict"
           % (worst_abs, worst_abs * 100))
-    print("    （sep8 / K_CH 是比值尺度，绝对阈值不适用；其 α-无关性由 M1 的 ANOVA 确立。）")
+    print("    (sep8 / K_CH are ratio-scale, absolute thresholds do not apply; their alpha-independence is established by the M1 ANOVA.)")
     M4 = bool(all(flat.values()))
 
     checks = dict(M1_invariance=M1, M2_constant_baseline=bool(abs(wstar - 0.5) < 1e-3),
@@ -398,7 +417,7 @@ def main():
     print("\n" + "=" * 78)
     for k, v in checks.items():
         print("    %-34s %s" % (k, v))
-    print("  VERDICT: %s      用时 %.0fs" % (verdict, time.time() - t0))
+    print("  VERDICT: %s      elapsed %.0fs" % (verdict, time.time() - t0))
     print("=" * 78)
 
     report = dict(theorem="minimax risk of any data-only statistic = 1/2",
@@ -419,7 +438,7 @@ def main():
     out = os.path.join(logs, "verify_minimax.json")
     with open(out, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
-    print("报告已写入 %s" % out)
+    print("Report written to %s" % out)
 
 
 if __name__ == "__main__":

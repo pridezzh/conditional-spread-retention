@@ -1,79 +1,96 @@
 # -*- coding: utf-8 -*-
-"""Lambda 的新定义：条件分布到"矩匹配高斯"的切片 W2 亏损（Gaussian deficit）。
+"""A new definition of Lambda: sliced W2 deficit of a conditional distribution
+against its moment-matched Gaussian (Gaussian deficit).
 
-**纯 numpy 实现，不依赖 sklearn / scipy。**
+**Pure numpy implementation, no sklearn / scipy dependency.**
 
 --------------------------------------------------------------------
-一、为什么必须改定义（而不是修旧实现的零假设）
+1. Why the definition must change (instead of fixing the old implementation's null)
 --------------------------------------------------------------------
-旧 Lambda 声称检验"多峰"，但它实际检验的是"非高斯"：零假设是与样本同均值
-同协方差的高斯。而
+The old Lambda claimed to test for "multimodality", but it actually tested for
+"non-Gaussianity": the null hypothesis was a Gaussian with the same mean and
+covariance as the sample. And
 
-        高斯 ⊊ 单峰
+        Gaussian ⊊ unimodal
 
-所以任何**单峰但非高斯**的条件分布都会被系统性误判成多峰。压力测试
-（``code/analysis/run_falsification.py``，预注册否决线 FPR > 0.20）实测：
+so any **unimodal but non-Gaussian** conditional distribution is systematically
+misclassified as multimodal. The stress test
+(``code/analysis/run_falsification.py``, pre-registered veto line FPR > 0.20)
+measured in practice:
 
     lognorm 0.85   banana 0.95   uniform_ball 1.00   exp_skew 1.00
 
-全部命中否决线。注意这里有一个**反直觉但重要**的细节：重尾反而让旧检验更
-保守（t_df3 / t_df5 / laplace 的 FPR 都是 0.00）——因为重尾把"池化簇内方差"
-撑大，压低了分离度。所以这不是"调一调阈值"能解决的偏差，而是**统计量问的
-问题本身就是错的**。
+all hit the veto line. Note one **counter-intuitive but important** detail: heavy
+tails actually make the old test *more conservative* (t_df3 / t_df5 / laplace all
+have FPR 0.00) — because heavy tails inflate the "pooled within-cluster variance"
+and suppress the separation. So this is not a bias fixable by "tuning a threshold";
+rather, **the question the statistic asks is itself wrong**.
 
-这个病根**换零假设也治不好**：逐坐标秩高斯化只改边缘分布，改不掉 banana
-的弯曲、uniform_ball 的紧支撑这类**联合结构**；而做严格的多元单峰检验要用
-Hartigan dip，其临界值依赖"均匀分布是最不利单峰"这一渐近结论，有限样本下
-难以校准，且多元单峰本身就不是个良定义的概念。
+This root cause **cannot be cured by changing the null either**: per-coordinate
+rank Gaussianization only changes the marginal distribution, not joint structure
+such as the banana's curvature or uniform_ball's compact support; a rigorous
+multivariate unimodality test would use the Hartigan dip, whose critical values
+rely on the asymptotic result that "the uniform distribution is the least favorable
+unimodal case", which is hard to calibrate at finite sample sizes, and multivariate
+unimodality itself is not a well-defined concept.
 
 --------------------------------------------------------------------
-二、新定义：不再问"是不是多峰"
+2. The new definition: stop asking "is it multimodal"
 --------------------------------------------------------------------
-从业者真正关心的其实是一个**不需要零假设就能回答**的问题：
+What practitioners really care about is a question **answerable without a null
+hypothesis**:
 
-    一步映射只能输出条件均值 m(c) 这一个点。最常见的补救是
-    "在 m(c) 周围加一个协方差匹配的高斯噪声"。
-    问：这个补救到底管不管用？
+    A one-step map can only output the conditional mean m(c) as a single point.
+    The most common remedy is "add a covariance-matched Gaussian noise around m(c)".
+    Question: does this remedy actually work?
 
-把这个问题写成量：
+Write this as a quantity:
 
     Lam(c) = E_theta [ W2^2( theta#p(·|c) , N(theta'm(c), theta'Sigma(c)theta) ) ]
              / E_theta [ theta' Sigma(c) theta ]
 
-其中 theta 取单位球面上的随机方向，theta#p 表示 1-D 投影分布，
-Sigma(c) = Cov(x|c)。分母是"平均每个方向的条件方差"（= tr Sigma(c)/d）。
+where theta is a random direction on the unit sphere, theta#p denotes the 1-D
+projected distribution, and Sigma(c) = Cov(x|c). The denominator is the "average
+conditional variance per direction" (= tr Sigma(c)/d).
 
-性质：
-  * Lam ∈ [0, ~1]，**尺度无关**；
-  * Lam = 0 当且仅当 p(·|c) 在**每个** 1-D 投影上都是高斯；
-  * 没有零假设、没有 p 值、没有 FPR/TPR —— 它是一个可直接读取的指数，
-    因此校核报告里那条针对"多峰检验"的预注册否决线**不再适用**。
+Properties:
+  * Lam ∈ [0, ~1], **scale-invariant**;
+  * Lam = 0 iff p(·|c) is Gaussian on **every** 1-D projection;
+  * No null hypothesis, no p-value, no FPR/TPR — it is an index that can be read
+    directly, so the pre-registered veto line in the audit report that targeted the
+    "multimodality test" **no longer applies**.
 
-为什么用 W2 而不是 CH / 卡方型统计量：
-    W2 是**输运距离**，问的是"质量要搬多远"，对尾部的敏感度是多项式的；
-    而 CH 本质是簇间/簇内方差比，重尾会把它撑爆（或反过来压低）。这正是
-    对付 t 分布、对数正态这些形状所需要的稳健性。
+Why W2 instead of CH / chi-square-type statistics:
+    W2 is a **transport distance**: it asks "how far must mass be moved", and its
+    sensitivity to tails is polynomial; whereas CH is essentially a between/within
+    cluster variance ratio, which heavy tails blow up (or conversely suppress). This
+    is exactly the robustness needed against t-distributions, log-normal, and other
+    shape effects.
 
 --------------------------------------------------------------------
-三、有限样本偏差与一阶校正
+3. Finite-sample bias and first-order correction
 --------------------------------------------------------------------
-用经验分位数估计 W2^2 有一个 O(1/n) 的正偏：极端次序统计量会系统性地偏离
-高斯分位数，且该偏差在尾部按 1/phi(z) 发散（有限 n 下被 u = 1/(2n) 截断）。
-本模块用**同规模高斯样本的蒙特卡洛基线**做一阶校正：
+Estimating W2^2 from empirical quantiles has a positive O(1/n) bias: the extreme
+order statistics systematically deviate from the Gaussian quantiles, and the bias
+diverges in the tail as 1/phi(z) (truncated at finite n by u = 1/(2n)). This module
+uses a **Monte-Carlo baseline from same-size Gaussian samples** for first-order
+correction:
 
     W2^2_corr = W2^2_raw - b(n) * s^2
 
-其中 b(n) = E[W2^2(n 个标准正态样本, 其矩匹配高斯)]，按 n 缓存。
-校正后依构造有 Lam(gauss) = 0（见 ``validate_deficit.py`` 的检验 R1）。
+where b(n) = E[W2^2(n i.i.d. standard normal samples, its moment-matched Gaussian)],
+cached by n. By construction the corrected value gives Lam(gauss) = 0 (see test R1
+in ``validate_deficit.py``).
 """
 import numpy as np
 
 _BASELINE_CACHE = {}
 
 
-# ---------------------------------------------------------------- 反正态 CDF
+# ---------------------------------------------------------------- inverse normal CDF
 def _norm_ppf(u):
-    """反标准正态 CDF（Acklam 有理逼近，相对误差 < 1.2e-9），保持 numpy-only。"""
+    """Inverse standard normal CDF (Acklam rational approximation, relative error
+    < 1.2e-9), kept numpy-only."""
     u = np.asarray(u, dtype=np.float64)
     a = np.array([-3.969683028665376e+01, 2.209460984245205e+02,
                   -2.759285104469687e+02, 1.383577518672690e+02,
@@ -106,14 +123,14 @@ def _norm_ppf(u):
     return out
 
 
-# ---------------------------------------------------------------- 一维 W2
+# ---------------------------------------------------------------- 1-D W2
 def w2_to_gaussian_1d(p):
-    """一维样本到其矩匹配高斯的 W2^2。
+    """W2^2 of a 1-D sample against its moment-matched Gaussian.
 
-    对经验测度（等质量 1/n），W2^2 = ∫_0^1 (F_n^{-1}(u) - F_g^{-1}(u))^2 du，
-    用 u_j = (j+1/2)/n 离散化即得分位数的均方误差。
+    For the empirical measure (equal mass 1/n), W2^2 = ∫_0^1 (F_n^{-1}(u) - F_g^{-1}(u))^2 du,
+    discretized with u_j = (j+1/2)/n, i.e. the mean squared error of the quantiles.
 
-    返回 (w2_squared, sample_variance)。
+    Returns (w2_squared, sample_variance).
     """
     p = np.sort(np.asarray(p, dtype=np.float64).ravel())
     n = p.size
@@ -129,12 +146,14 @@ def w2_to_gaussian_1d(p):
 
 
 def _baseline(n, seed=91711, n_rep=256):
-    """单位方差高斯在同样流程下的 W2^2（有限样本正偏），按 n 缓存。
+    """W2^2 of a unit-variance Gaussian under the same pipeline (finite-sample
+    positive bias), cached by n.
 
-    n_rep 必须足够大：该统计量的方差主要来自**极端次序统计量**
-    （u = 1/(2n) 处分母 phi(z) 很小），分布明显右偏，重复次数少了
-    蒙特卡洛误差会把校正量本身带偏。实测 n_rep=24 时基线与独立重复
-    的实测均值差 34%，取 256 后收敛。
+    n_rep must be large enough: most of this statistic's variance comes from the
+    **extreme order statistics** (at u = 1/(2n) the denominator phi(z) is tiny), and
+    the distribution is clearly right-skewed; too few repetitions and the Monte-Carlo
+    error biases the correction term itself. Measured: at n_rep=24 the baseline differs
+    from the independently repeated empirical mean by 34%; it converges at 256.
     """
     key = (int(n), int(n_rep))
     if key not in _BASELINE_CACHE:
@@ -146,20 +165,20 @@ def _baseline(n, seed=91711, n_rep=256):
     return _BASELINE_CACHE[key]
 
 
-# ---------------------------------------------------------------- 核心统计量
+# ---------------------------------------------------------------- core statistic
 def gaussian_deficit(Z, n_proj=64, seed=0, correct_bias=True, proj_chunk=32):
-    """单个分布 p 的切片 W2 亏损。
+    """Sliced W2 deficit of a single distribution p.
 
-    Z : (n, d) 来自 p 的样本。
+    Z : (n, d) samples drawn from p.
 
-    返回 (lam, lam_uncorrected, mean_proj_var)
-      lam           偏差校正后的切片 W2 亏损 ∈ [0, ~1]
-      lam_uncorrect 未校正值（用于报告校正量有多大）
-      mean_proj_var 随机方向上的平均方差（= tr Sigma / d 的估计）
+    Returns (lam, lam_uncorrected, mean_proj_var)
+      lam            bias-corrected sliced W2 deficit ∈ [0, ~1]
+      lam_uncorrect  uncorrected value (reports how large the correction is)
+      mean_proj_var  average variance along random directions (= estimate of tr Sigma / d)
 
-    **方向必须分块**：一次把所有方向的投影铺成 (n, n_proj) 矩阵，在
-    n = 2e5、n_proj = 256 时就是 409 MB，会直接把进程撑爆。分块后峰值
-    内存降到 O(n * proj_chunk)。
+    **Projections must be chunked**: laying out all projection directions at once into
+    an (n, n_proj) matrix costs 409 MB at n = 2e5, n_proj = 256, which would blow up
+    the process. After chunking, peak memory drops to O(n * proj_chunk).
     """
     Z = np.asarray(Z, dtype=np.float64)
     if Z.ndim == 1:
@@ -191,15 +210,17 @@ def gaussian_deficit(Z, n_proj=64, seed=0, correct_bias=True, proj_chunk=32):
 def conditional_gaussian_deficit(C, X, n_anchor=48, n_nb=150, n_proj=64,
                                  seed=0, pca_dim=32, correct_bias=True,
                                  min_size=40):
-    """条件版的 Lambda：在条件空间的锚点邻域内计算切片 W2 亏损。
+    """Conditional version of Lambda: sliced W2 deficit within anchor neighborhoods
+    of the condition space.
 
-    与旧 ``conditional_mode_separation`` 用同一套锚点-邻域协议，便于对照。
+    Uses the same anchor-neighborhood protocol as the old
+    ``conditional_mode_separation`` for easy comparison.
 
-    返回 dict：
-      lam          各锚点 Lambda 的均值
-      lam_std      各锚点之间的标准差（刻画条件间异质性）
-      lam_raw      未做偏差校正的均值
-      per_anchor   逐锚点值
+    Returns dict:
+      lam           mean of per-anchor Lambda
+      lam_std       std across anchors (captures cross-condition heterogeneity)
+      lam_raw       uncorrected mean
+      per_anchor    per-anchor values
       n_anchor, n_nb
     """
     C = np.asarray(C, dtype=np.float64)
@@ -210,9 +231,9 @@ def conditional_gaussian_deficit(C, X, n_anchor=48, n_nb=150, n_proj=64,
         X = X.reshape(-1, 1)
     n = len(C)
     n_nb = int(min(max(min_size, n_nb), max(min_size, n // 4)))
-    Cs = (C - C.mean(axis=0)) / (C.std(axis=0) + 1e-8)   # 条件量纲标准化
+    Cs = (C - C.mean(axis=0)) / (C.std(axis=0) + 1e-8)   # standardize condition scale
     Xr = X
-    if X.shape[1] > pca_dim:                              # 高维先降维
+    if X.shape[1] > pca_dim:                              # reduce dimension first if high-dim
         Xc = X - X.mean(axis=0, keepdims=True)
         U, S, _ = np.linalg.svd(Xc, full_matrices=False)
         Xr = Xc @ U[:, :pca_dim].T

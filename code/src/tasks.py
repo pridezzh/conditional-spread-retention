@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
-"""三类受控任务：二维环形混合高斯 / 条件图像（MNIST）/ 多目标连续控制（离线 RL）。
+"""Three families of controlled tasks: 2-D ring mixture of Gaussians / conditional
+images (MNIST) / multi-objective continuous control (offline RL).
 
-设计原则（论文 §5.1 的来源）：
-  - **目标的边际分布不变，只改变"条件 c 对目标 x 的解释程度"与"不可解释部分的几何"**。
-    这样一步与多步的差距就只能归因于结构，而不是数据难度或网络容量。
-  - 三个任务族分别覆盖：可计算真值模态（玩具）、高维真实数据（图像）、
-    真实闭环回报（强化学习）。
+Design principles (source of paper §5.1):
+  - **The marginal distribution of the target is held fixed; only "how much the
+    condition c explains the target x" and "the geometry of the unexplained part"
+    are varied.** This way the gap between one step and many steps can only be
+    attributed to structure, not data difficulty or network capacity.
+  - The three task families respectively cover: computable ground-truth modes (toy),
+    high-dimensional real data (images), and real closed-loop returns (reinforcement
+    learning).
 """
 import gzip
 import os
@@ -19,16 +23,18 @@ os.makedirs(DATA, exist_ok=True)
 
 
 # --------------------------------------------------------------------------
-# 1) 二维（可推广到 d 维）环形混合高斯：真值模态结构已知
+# 1) 2-D (generalizable to d-D) ring mixture of Gaussians: ground-truth mode
+#    structure is known
 # --------------------------------------------------------------------------
 class RingMixture(object):
-    """条件混合高斯：x = mu_k + sigma*xi,  c = mu_k^c + eta*zeta,  k ~ U[K].
+    """Conditional mixture of Gaussians: x = mu_k + sigma*xi,  c = mu_k^c + eta*zeta,
+    k ~ U[K].
 
-    三个受控维度：
-      K            模态数（1,2,4,8,16）
-      sep_ratio    R / sigma，模态间距与模态宽度之比（拓扑轴）
-      eta          上下文噪声，越小则 c 越能确定 k（条件强度轴）
-      d            目标维度（默认 2，可升到 8 检验维度效应）
+    Three controlled dimensions:
+      K             number of modes (1,2,4,8,16)
+      sep_ratio    R / sigma, ratio of mode spacing to mode width (topology axis)
+      eta          context noise; smaller means c determines k more (condition-strength axis)
+      d             target dimension (default 2, can rise to 8 to test dimension effects)
     """
 
     def __init__(self, K=8, sep_ratio=6.0, sigma=0.12, eta=0.25, d=2,
@@ -61,7 +67,7 @@ class RingMixture(object):
         return c.astype(np.float32), x.astype(np.float32), k
 
     def posterior_weights(self, c):
-        """p(k | c) 的精确后验（上下文噪声为各向同性高斯）。"""
+        """Exact posterior p(k | c) (context noise is isotropic Gaussian)."""
         c = np.atleast_2d(c)
         d2 = ((c[:, None, :] - self.ctx_centers[None, :, :]) ** 2).sum(-1)
         logp = -d2 / (2.0 * max(self.eta, 1e-6) ** 2)
@@ -71,7 +77,7 @@ class RingMixture(object):
         return w  # (n, K)
 
     def true_conditional_samples(self, c, m):
-        """从真实条件分布 p(x|c) 采样 m 个样本 / 每个上下文。"""
+        """Sample m samples from the true conditional distribution p(x|c) per context."""
         c = np.atleast_2d(c)
         w = self.posterior_weights(c)                       # (n,K)
         n = c.shape[0]
@@ -82,9 +88,11 @@ class RingMixture(object):
         return out
 
     def analytic_D(self, n=40000, seed=0):
-        """总体判别量 D 的**闭式值**（仅玩具任务可用，用来校准估计器）。
+        """**Closed-form** value of the population discriminant D (toy task only; used
+        to calibrate the estimator).
 
-        Var(x|c) = sum_k w_k(c) [ ||mu_k - m(c)||^2 + d*sigma^2 ]（混合分布的协方差迹）
+        Var(x|c) = sum_k w_k(c) [ ||mu_k - m(c)||^2 + d*sigma^2 ] (trace of the mixture
+        covariance)
         D        = E_c[tr Var(x|c)] / tr Var(x)
         """
         rng = np.random.default_rng(seed + 555)
@@ -106,7 +114,7 @@ class RingMixture(object):
 
 
 # --------------------------------------------------------------------------
-# 2) MNIST 条件图像：目标边际不变，只变条件强度
+# 2) MNIST conditional images: target marginal fixed, only condition strength varies
 # --------------------------------------------------------------------------
 def _download(url, dst):
     import subprocess
@@ -116,7 +124,7 @@ def _download(url, dst):
                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if p.returncode == 0 and os.path.exists(dst) and os.path.getsize(dst) > 1000:
             return True
-        print("   重试下载", url, str(p.stderr[:100]))
+        print("   retrying download", url, str(p.stderr[:100]))
     return False
 
 
@@ -132,7 +140,8 @@ def _load_idx(path):
 
 def load_mnist(size=16, max_train=40000, max_test=8000, seed=0,
                return_metadata=False):
-    """加载 MNIST；可选返回数据来源，避免静默回退后仍把结果标成 MNIST。"""
+    """Load MNIST; optionally return the data source to avoid silently falling back yet
+    still labeling the result as MNIST."""
     cache = os.path.join(DATA, "mnist_%d.npz" % size)
     if os.path.exists(cache):
         z = np.load(cache)
@@ -157,11 +166,11 @@ def load_mnist(size=16, max_train=40000, max_test=8000, seed=0,
             xte = _load_idx(os.path.join(DATA, files[2]))
             yte = _load_idx(os.path.join(DATA, files[3]))
         except Exception as ex:
-            print("   MNIST 解析失败:", ex)
+            print("   MNIST parsing failed:", ex)
             xtr = None
     if xtr is None:
         from sklearn.datasets import load_digits
-        print("   [回退] 使用 sklearn 自带 8x8 digits 数据集")
+        print("   [fallback] using sklearn's built-in 8x8 digits dataset")
         d = load_digits()
         x = d.images.astype(np.float32) / 16.0
         y = d.target.astype(np.int64)
@@ -184,7 +193,7 @@ def load_mnist(size=16, max_train=40000, max_test=8000, seed=0,
 
 
 def _resize(im, size):
-    """最近邻-块平均缩放（不依赖 cv2/torchvision）。"""
+    """Nearest-neighbor block-average resize (no cv2/torchvision dependency)."""
     h, w = im.shape
     if h == size:
         return im
@@ -193,22 +202,23 @@ def _resize(im, size):
 
 
 def make_image_condition(x, y, mode):
-    """把图像 x 压成条件 c。mode 控制条件强度（越弱 -> 判别量越大）。"""
+    """Compress image x into condition c. mode controls condition strength (weaker ->
+    larger discriminant)."""
     n, h, w = x.shape
-    if mode == "full":        # 8x8 粗化 + 标签：强条件
+    if mode == "full":        # 8x8 coarsening + label: strong condition
         coarse = _resize_batch(x, 8).reshape(n, -1)
         onehot = _onehot(y, 10)
         return np.concatenate([coarse, onehot], axis=1).astype(np.float32)
-    if mode == "mid":         # 4x4 粗化 + 标签
+    if mode == "mid":         # 4x4 coarsening + label
         coarse = _resize_batch(x, 4).reshape(n, -1)
         return np.concatenate([coarse, _onehot(y, 10)], axis=1).astype(np.float32)
-    if mode == "weak":        # 只有标签
+    if mode == "weak":        # label only
         return _onehot(y, 10).astype(np.float32)
-    if mode == "half":        # 只看到左半张图 + 标签
+    if mode == "half":        # only the left half of the image + label
         half = x[:, :, : w // 2]
         coarse = _resize_batch(half, 4).reshape(n, -1)
         return np.concatenate([coarse, _onehot(y, 10)], axis=1).astype(np.float32)
-    if mode == "none":        # 无条件
+    if mode == "none":        # unconditional
         return np.zeros((n, 1), dtype=np.float32)
     raise ValueError(mode)
 
@@ -227,19 +237,22 @@ def _onehot(y, k):
 
 
 # --------------------------------------------------------------------------
-# 3) 多目标连续控制：离线数据集 + 可闭环评估的环境
+# 3) Multi-objective continuous control: offline dataset + closed-loop evaluation env
 # --------------------------------------------------------------------------
 class MultiGoalNav(object):
-    """2D 连续导航；K 个目标均匀分布在半径 0.8 的圆上。
+    """2-D continuous navigation; K goals uniformly placed on a circle of radius 0.8.
 
-    - 状态 s ∈ [-1,1]^2，动作 a ∈ R^2（速度，||a|| ≤ 0.12），步长上限 T=40；
-    - 到达真实目标 0.12 以内即成功并终止，稀疏奖励 +1，否则 0；
-    - 上下文 c = (s, 目标观测)；目标观测的强度是**条件强度轴**：
-        'exact'  : 目标 one-hot（完全确定）
-        'noisy'  : one-hot 以概率 1-p 被换成均匀分布（p 可调）
-        'partial': 只给目标所在象限（4 类）
-        'none'   : 不给目标信息（条件最弱 -> 条件动作分布 K 峰）
-    - 动作块 horizon H：一次生成 H 步动作（H=1/4/8），对应 C19/C20 的"拉长 horizon"消融。
+    - State s ∈ [-1,1]^2, action a ∈ R^2 (velocity, ||a|| ≤ 0.12), max steps T=40;
+    - Reaching within 0.12 of the true goal succeeds and terminates, sparse reward +1,
+      otherwise 0;
+    - Context c = (s, goal observation); the strength of the goal observation is the
+      **condition-strength axis**:
+        'exact'  : goal one-hot (fully determined)
+        'noisy'  : one-hot replaced by a uniform distribution with probability 1-p (p tunable)
+        'partial': only the goal's quadrant is given (4 classes)
+        'none'   : no goal information (weakest condition -> multi-modal conditional action dist.)
+    - Action block horizon H: generate H steps of actions at once (H=1/4/8), corresponding
+      to the "lengthened horizon" ablation of C19/C20.
     """
 
     def __init__(self, K=6, T=40, radius=0.8, seed=0):
@@ -263,7 +276,8 @@ class MultiGoalNav(object):
         g = self.goals[g_idx]
         a = np.stack([self.expert_action(s[i], g[i]) for i in range(n)])
         a = a + sigma_a * rng.normal(size=a.shape)
-        # 动作块：把未来 H 步的专家动作拼起来（用直线外推近似）
+        # Action block: concatenate the expert actions of the next H steps (using a
+        # straight-line extrapolation approximation)
         if H > 1:
             blocks = [a]
             s_cur = s.copy()
@@ -305,8 +319,9 @@ class MultiGoalNav(object):
         return onehot
 
     def sample_episodes(self, n, seed, p_obs=0.5):
-        """预先抽好 n 个回合的 (初始状态, 真实目标, 是否揭示目标)，
-        使不同 NFE 的策略在**完全相同的回合**上比较（配对比较，降方差）。"""
+        """Pre-draw n episodes' (initial state, true goal, whether goal is revealed), so
+        that policies with different NFEs are compared on **exactly the same episodes**
+        (paired comparison, reduced variance)."""
         rng = np.random.default_rng(seed)
         s0 = rng.uniform(-1, 1, size=(n, 2))
         gi = rng.integers(0, self.K, size=n)
@@ -314,7 +329,7 @@ class MultiGoalNav(object):
         return s0, gi, reveal
 
     def context_one(self, s, gi, ctx, reveal=True):
-        """构造单条上下文（评估时用，不引入新的随机性）。"""
+        """Construct a single context (used at evaluation, introduces no new randomness)."""
         s = np.asarray(s, dtype=np.float32).reshape(1, 2)
         g_idx = np.asarray([gi], dtype=np.int64)
         if ctx in ("exact", "noisy"):
@@ -335,7 +350,8 @@ class MultiGoalNav(object):
         raise ValueError(ctx)
 
     def run_episodes(self, policy_fn, episodes, ctx, H=1, max_T=40):
-        """在预先抽好的回合上闭环评估；动作块按 open-loop 执行 H 步。"""
+        """Closed-loop evaluation on pre-drawn episodes; action blocks are executed
+        open-loop for H steps."""
         s0, gi, reveal = episodes
         succ, ret = [], []
         for i in range(len(s0)):
@@ -364,7 +380,7 @@ class MultiGoalNav(object):
         return float(np.mean(succ)), float(np.mean(ret)), np.array(succ)
 
     def evaluate(self, policy_fn, n_episodes=200, seed=0, H=1):
-        """闭环评估：policy_fn(s, g_idx) -> 动作（或动作块）。"""
+        """Closed-loop evaluation: policy_fn(s, g_idx) -> action (or action block)."""
         rng = np.random.default_rng(seed)
         succ, ret = [], []
         for _ in range(n_episodes):

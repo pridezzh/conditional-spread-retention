@@ -1,23 +1,30 @@
 # -*- coding: utf-8 -*-
-"""评测指标：全部为公开、可独立实现的度量（不依赖任何预训练网络）。
+"""Evaluation metrics: all public, independently implementable measures (no
+dependency on any pretrained network).
 
-  sliced_wasserstein  切片 Wasserstein-2（Kolouri et al. 2019 的广义切片 W 距离特例）
-  energy_distance     （等价于一阶能量距离，作为稳健性交叉校验）
-  mode_recall/precision  真值模态已知时的模态覆盖/塌缩率（玩具任务）
-  prdc                Kynkaanniemi et al., NeurIPS 2019 的改进 precision/recall（图像任务）
+  sliced_wasserstein   sliced Wasserstein-2 (a special case of the generalized sliced-W
+                      distance of Kolouri et al. 2019)
+  energy_distance      (equivalent to the first-order energy distance, as a robustness check)
+  mode_recall/precision  mode coverage / collapse rate when ground-truth modes are known (toy tasks)
+  prdc                improved precision/recall of Kynkaanniemi et al., NeurIPS 2019 (image tasks)
 """
 import numpy as np
 
 
 def conditional_reference_samples(C_ref, X_ref, C_query, n_ref=256, seed=0,
                                   exclude_indices=None):
-    """仅依据可观测条件，为每个查询条件构造经验条件参考集。
+    """Construct an empirical conditional reference set for each query condition using
+    only the observable condition.
 
-    该函数故意不接收类别标签。图像实验旧实现按真实数字标签选参考图，即使
-    ``mode='none'`` 时条件中根本没有标签，因而把不可用信息泄漏进了指标。
+    This function deliberately does not receive class labels. The old image-experiment
+    implementation picked reference images by the true digit label, even when the
+    condition contained no label at all under ``mode='none'``, thus leaking unavailable
+    information into the metric.
 
-    连续条件用标准化后的条件空间近邻；条件完全常数时从整个参考集独立抽样，
-    对应经验边际分布。``exclude_indices[i]`` 可排除查询样本自身。
+    Continuous conditions use nearest neighbors in the standardized condition space;
+    when the condition is completely constant, samples are drawn independently from the
+    whole reference set, corresponding to the empirical marginal. ``exclude_indices[i]``
+    can exclude the query sample itself.
     """
     C_ref = np.asarray(C_ref, dtype=np.float64)
     C_query = np.asarray(C_query, dtype=np.float64)
@@ -27,12 +34,12 @@ def conditional_reference_samples(C_ref, X_ref, C_query, n_ref=256, seed=0,
     if C_query.ndim == 1:
         C_query = C_query[:, None]
     if len(C_ref) != len(X_ref):
-        raise ValueError("C_ref 与 X_ref 的样本数必须一致")
+        raise ValueError("C_ref and X_ref must have the same number of samples")
     if n_ref < 1:
-        raise ValueError("n_ref 必须为正整数")
+        raise ValueError("n_ref must be a positive integer")
     n_take = min(int(n_ref), len(C_ref) - (1 if exclude_indices is not None else 0))
     if n_take < 1:
-        raise ValueError("参考集样本不足")
+        raise ValueError("insufficient reference-set samples")
 
     scale = C_ref.std(axis=0)
     active = scale > 1e-12
@@ -53,7 +60,8 @@ def conditional_reference_samples(C_ref, X_ref, C_query, n_ref=256, seed=0,
             d2 = ((z_ref - z_q) ** 2).sum(axis=1)
             if banned is not None:
                 d2[banned] = np.inf
-            # 随机微扰只打破完全相同条件的并列，不改变非并列距离的次序。
+            # The random perturbation only breaks ties among identical conditions; it
+            # does not change the ordering of non-tied distances.
             d2 = d2 + rng.uniform(0.0, 1e-12, size=len(d2))
             idx = np.argpartition(d2, n_take - 1)[:n_take]
         refs.append(X_ref[idx])
@@ -61,7 +69,7 @@ def conditional_reference_samples(C_ref, X_ref, C_query, n_ref=256, seed=0,
 
 
 def sliced_wasserstein(A, B, n_proj=1024, seed=0, p=2):
-    """样本间切片 W_2 距离（对投影方向做蒙特卡洛）。"""
+    """Sliced W_2 distance between sample sets (Monte-Carlo over projection directions)."""
     A = np.asarray(A, dtype=np.float64)
     B = np.asarray(B, dtype=np.float64)
     d = A.shape[1]
@@ -95,18 +103,20 @@ def energy_distance(A, B, seed=0, max_n=2000):
 
 
 def mode_stats(samples, centers, tol=None):
-    """真值模态已知时的模态统计。
+    """Mode statistics when ground-truth modes are known.
 
-    关键口径：样本只有落在**某个模态的容差球内**才算"命中该模态"；
-    否则记为 off-mode。若不做这一步，塌缩到环心的一团样本会被"最近中心"
-    均匀分摊给各模态，从而虚假地报告 recall=1。
+    Key protocol: a sample counts as "hitting a mode" only if it falls within that
+    mode's tolerance ball; otherwise it is recorded as off-mode. Without this step, a
+    blob collapsed onto the ring center would be evenly split across modes by "nearest
+    center", falsely reporting recall=1.
 
-    返回 dict：
-      recall   : 经验质量 ≥ 名义质量一半的模态占比（模态召回率）
-      drop     : 经验质量 < 名义质量 10% 的模态占比（模态塌缩率）
-      off_frac : 不在任何模态容差球内的样本占比（一步塌缩的直接证据）
-      min_ratio: 最差模态的经验质量 / 名义质量
-      entropy_ratio : 经验模态分布熵 / 均匀熵
+    Returns dict:
+      recall   : share of modes whose empirical mass ≥ half the nominal mass (mode recall)
+      drop     : share of modes whose empirical mass < 10% of nominal mass (mode collapse)
+      off_frac : share of samples outside every mode's tolerance ball (direct evidence of
+                 one-step collapse)
+      min_ratio: worst mode's empirical mass / nominal mass
+      entropy_ratio : empirical mode-distribution entropy / uniform entropy
     """
     samples = np.asarray(samples, dtype=np.float64)
     centers = np.asarray(centers, dtype=np.float64)
@@ -115,7 +125,7 @@ def mode_stats(samples, centers, tol=None):
     lab = d2.argmin(axis=1)
     dmin = d2.min(axis=1)
     if tol is None:
-        # 默认容差 = 最近的两个模态中心距离的一半
+        # default tolerance = half the distance between the two nearest mode centers
         cd = np.linalg.norm(centers[:, None, :] - centers[None, :, :], axis=-1)
         np.fill_diagonal(cd, np.inf)
         tol = float(cd.min() / 2.0) if K > 1 else np.inf
@@ -134,23 +144,28 @@ def mode_stats(samples, centers, tol=None):
 
 
 def mode_stats_band(samples, centers, radius, sigma, band=3.0, min_share=0.01):
-    """环形混合任务的模态统计（**σ 尺度球**口径，用于替代容差球）。
+    """Mode statistics for the ring-mixture task (**σ-scale ball** protocol, replacing the
+    tolerance ball).
 
-    为什么要换口径（本项目实测踩到两个坑）：
-      1) 旧容差取"最近模态间距的一半"，会随 K 变小。K=16、sep_ratio=6 时
-         相邻模态间距仅 2R·sin(pi/16)*sigma 尺度上约 2.34σ，半间距 ≈1.17σ
-         **比模态自身的径向尺度还小**，真样本被误判为 off-mode（旧口径下
-         K=16 的 recall 假性掉到 0.75~0.88）。
-      2) K=1 时没有"最近模态间距"，旧口径退化成"最近中心"分摊，**恰好掩盖
-         一步采样塌缩**这一最重要的失败模式（旧口径下 K=1 报 recall=1.00）。
+    Why change the protocol (two pitfalls found in this project's measurements):
+      1) The old tolerance was "half the nearest mode spacing", which shrinks with K. At
+         K=16, sep_ratio=6, the spacing between adjacent modes is only ~2.34σ on the
+         2R·sin(pi/16)*sigma scale, so half-spacing ≈1.17σ is **smaller than the mode's
+         own radial scale**, and true samples were misclassified as off-mode (under the old
+         protocol K=16 recall falsely dropped to 0.75~0.88).
+      2) At K=1 there is no "nearest mode spacing", so the old protocol degenerated into
+         "nearest center" assignment, **exactly masking** the most important failure mode —
+         one-step sampling collapse (under the old protocol K=1 reported recall=1.00).
 
-    新口径：容差取与 K 无关的 **σ 尺度球** tol = sigma*(band + sqrt(d))：
-      off_frac      : 到最近模态中心的距离 > tol 的样本占比
-                      —— 一步塌缩（落在环内/模态之间）会直接被记进来
-      recall_band   : 球内样本按最近中心分配后，经验质量 ≥ min_share 的模态占比
+    New protocol: tolerance is a **σ-scale ball** independent of K, tol = sigma*(band + sqrt(d)):
+      off_frac      : share of samples whose distance to the nearest mode center > tol
+                      —— one-step collapse (falling inside the ring / between modes) is
+                      recorded directly here
+      recall_band   : after assigning in-ball samples to the nearest center, share of modes
+                      whose empirical mass ≥ min_share
       drop_band     : 1 - recall_band
-      entropy_ratio : 球内经验模态分布的归一化熵
-      radial_off    : 径向读数 | ||x|| - R | > tol 的占比（交叉校验，免疫角度错位）
+      entropy_ratio : normalized entropy of the in-ball empirical mode distribution
+      radial_off    : share with | ||x|| - R | > tol (cross-check, immune to angular misalignment)
     """
     samples = np.asarray(samples, dtype=np.float64)
     centers = np.asarray(centers, dtype=np.float64)
@@ -172,7 +187,7 @@ def mode_stats_band(samples, centers, radius, sigma, band=3.0, min_share=0.01):
     if not out["on_band"]:
         out["drop_band"] = 1.0
         return out
-    prop = np.bincount(lab[on], minlength=K) / int(on.sum())   # 球内经验质量
+    prop = np.bincount(lab[on], minlength=K) / int(on.sum())   # in-ball empirical mass
     recall = float(np.mean(prop >= min_share))
     ent = -(prop[prop > 0] * np.log(prop[prop > 0])).sum()
     out.update(recall_band=recall, drop_band=1.0 - recall,
@@ -183,9 +198,9 @@ def mode_stats_band(samples, centers, radius, sigma, band=3.0, min_share=0.01):
 
 
 def conditional_sw(true_samples, gen_samples, n_proj=512, seed=0):
-    """条件 SW：对每个上下文先算 SW，再对上下文取均值。
+    """Conditional SW: compute SW per context first, then average over contexts.
 
-    true_samples: (n_ctx, m, d)；gen_samples: (n_ctx, m, d)
+    true_samples: (n_ctx, m, d); gen_samples: (n_ctx, m, d)
     """
     true_samples = np.asarray(true_samples, dtype=np.float64)
     gen_samples = np.asarray(gen_samples, dtype=np.float64)
@@ -196,7 +211,7 @@ def conditional_sw(true_samples, gen_samples, n_proj=512, seed=0):
 
 
 def _pairwise_dist(X, Y, chunk=512):
-    """分块计算 ||x-y||^2，避免一次性开 n×n 大矩阵。"""
+    """Chunked computation of ||x-y||^2 to avoid opening a full n×n matrix at once."""
     n, m = len(X), len(Y)
     out = np.empty((n, m), dtype=np.float64)
     for s in range(0, n, chunk):
@@ -206,12 +221,14 @@ def _pairwise_dist(X, Y, chunk=512):
 
 
 def prdc(real, fake, k=5, seed=0, max_n=3000):
-    """Kynkaanniemi et al., NeurIPS 2019 的 precision / recall / density / coverage。
+    """Precision / recall / density / coverage of Kynkaanniemi et al., NeurIPS 2019.
 
-    precision: 生成样本落在真实样本 k-邻域球内的比例（生成质量）
-    recall   : 真实样本被生成样本邻域球覆盖的比例（模态覆盖，丢模态 → 下降）
-    density  : 每个生成样本平均被多少个真实球覆盖 / k
-    coverage : 至少含一个生成样本的真实球比例
+    precision: share of generated samples falling inside a real-sample k-neighborhood ball
+               (generation quality)
+    recall   : share of real samples covered by a generated-sample neighborhood ball
+               (mode coverage; dropped modes → decrease)
+    density  : average number of real balls covering each generated sample / k
+    coverage : share of real balls containing at least one generated sample
     """
     real = np.asarray(real, dtype=np.float64)
     fake = np.asarray(fake, dtype=np.float64)
@@ -223,34 +240,35 @@ def prdc(real, fake, k=5, seed=0, max_n=3000):
     nr, nf = len(real), len(fake)
     kk = min(k, nr - 1, nf - 1)
 
-    # 真实样本 / 生成样本各自的 k 邻域半径（不含自身）
+    # k-neighborhood radius of real / generated samples themselves (excluding self)
     Drr = _pairwise_dist(real, real)
     Dff = _pairwise_dist(fake, fake)
-    r_real = np.sort(Drr, axis=1)[:, kk]         # 第 kk 近（0 列为自身）
+    r_real = np.sort(Drr, axis=1)[:, kk]         # kk-th nearest (column 0 is self)
     r_fake = np.sort(Dff, axis=1)[:, kk]
 
     Drf = _pairwise_dist(real, fake)             # (nr, nf)
-    # precision: 每个 fake 找最近的 real，看是否落在其球内
-    j = Drf.argmin(axis=0)                       # 每个 fake 最近的 real
+    # precision: for each fake, find nearest real and check if it lies in its ball
+    j = Drf.argmin(axis=0)                       # nearest real for each fake
     d_fake = Drf[j, np.arange(nf)]
     precision = float(np.mean(d_fake <= r_real[j]))
-    # recall: 每个 real 找最近的 fake
-    i = Drf.argmin(axis=1)                       # 每个 real 最近的 fake
+    # recall: for each real, find nearest fake
+    i = Drf.argmin(axis=1)                       # nearest fake for each real
     d_real = Drf[np.arange(nr), i]
     recall = float(np.mean(d_real <= r_fake[i]))
-    # density: 每个 fake 被多少个真实球覆盖 / k
+    # density: how many real balls cover each fake / k
     cnt = (Drf <= r_real[:, None]).sum(axis=0)
     density = float(np.mean(cnt / kk))
-    # coverage: 至少覆盖一个 fake 的真实球比例
+    # coverage: share of real balls covering at least one fake
     coverage = float(np.mean((Drf <= r_real[:, None]).sum(axis=1) > 0))
     return dict(precision=precision, recall=recall, density=density,
                 coverage=coverage)
 
 
 def pca_features(X, n_comp=64, seed=0, fit_on=None):
-    """PCA 投影（numpy SVD 实现，不依赖 sklearn）。fit_on 给定时用它拟合基。
+    """PCA projection (numpy SVD implementation, no sklearn). When fit_on is given,
+    fit the basis on it.
 
-    返回 (基样本的低维表示, X 的低维表示)。
+    Returns (low-dim representation of the base samples, low-dim representation of X).
     """
     X = np.asarray(X, dtype=np.float64)
     base = X if fit_on is None else np.asarray(fit_on, dtype=np.float64)

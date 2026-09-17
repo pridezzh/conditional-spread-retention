@@ -1,61 +1,79 @@
 # -*- coding: utf-8 -*-
-"""跨方法族受控对照：同分布、同网络宽深和同单阶段更新数。
+"""Cross-family controlled comparison: same distribution, same network width/depth, and same single-stage update count.
 
 --------------------------------------------------------------------
-为什么这个实验是论文的新核心
+Why this experiment is the new core of the paper
 --------------------------------------------------------------------
-外部校核指出：原理论只约束"独立耦合 CFM 的端点单位欧拉步"，不能推广到
-任意单步生成器；而 *Let It Be Simple* (2606.05737) 已部分重合，
-*From Flow to One Step* (2603.09415) 与 *One-Step Flow Policy* (2603.12480)
-是反例（它们的一步能保持多峰）。
+External review pointed out that the original theory only constrains the
+"endpoint unit Euler step of an independent-coupling CFM", and does not generalize
+to arbitrary one-step generators; moreover *Let It Be Simple* (2606.05737) already
+partially overlaps, and *From Flow to One Step* (2603.09415) and
+*One-Step Flow Policy* (2603.12480) are counterexamples (their one-step generators
+can preserve multimodality).
 
-本实验不把这些当成"打脸"，而是给出一个**统一解释**并把它变成可测的地图：
+Rather than treating these as refutations, this experiment provides a **unified
+explanation** and turns it into a measurable map:
 
-    点式 L2 端点回归保留多少条件展布由配对的**均值依赖**决定；
-    集合级损失还提供另一条经验上的逃逸路径。
+    How much conditional spread a pointwise L2 endpoint regression preserves is
+    determined by the **mean dependence** of the pairing;
+    set-level losses provide a second, empirical escape route.
 
-对逐点 L2 行，精确变量是条件均值依赖，而不是“耦合是否确定”或“是否
-独立”；集合级损失是另一类目标，只作为受控经验对照。因而这张地图用于
-核对实现和边界，不证明一个标量能普遍排序所有一步方法。
+For the pointwise L2 row, the precise variable is conditional mean dependence,
+not "whether the coupling is deterministic" or "whether it is independent"; the
+set-level loss is a different class of objective, used only as a controlled
+empirical contrast. Hence this map serves to check the implementation and its
+boundaries; it does not prove that a single scalar can universally rank all
+one-step methods.
 
 --------------------------------------------------------------------
-受控设计
+Controlled design
 --------------------------------------------------------------------
-数据：C=4 个条件，每条件 K=8 环上等权高斯混合（半径/旋转/平移各不相同，
-使 m(c) 随 c 变化、D 有意义）。闭式 tr Var(x1|j) = R_j^2 + d sigma^2。
-架构：同一个 MLP（输入 [x, t, onehot(c)]，隐层 256×4，输出 2）。
-预算：每个训练阶段使用同样步数、批量与优化器；重流和蒸馏包含额外教师阶段，
-因此这里不是总算力相等的比较。
-差异：**只**在训练目标的耦合 / 损失上。
+Data: C=4 conditions, each a K=8 equally-weighted Gaussian mixture on a ring
+(radius/rotation/translation differ across conditions so that m(c) varies with c
+and D is meaningful). Closed form tr Var(x1|j) = R_j^2 + d sigma^2.
+Architecture: the same MLP (input [x, t, onehot(c)], 4 hidden layers of 256,
+output 2).
+Budget: every training stage uses the same number of steps, batch size, and
+optimizer; reflow and distillation include an extra teacher stage, so this is
+not a total-compute-equal comparison.
+Difference: **only** in the coupling / loss of the training objective.
 
-六个方法族
-----------
-  cfm_indep    标准 CFM，独立耦合（x0 ⊥ x1）。理论预期一步 ρ=0。
-  cfm_ot       OT-FM：小批量内逐条件做匈牙利最优指派后再训练。
-  reflow       用 cfm_indep 的 32 步流映射生成 (x0, φ(x0,c)) 确定性配对，重训。
-  distill      一步网络以 L2 蒸馏 32 步流映射（一致性蒸馏的核心）。
-  onestep_l2   一步网络直接对 x1 做 L2 回归（独立耦合）—— 理论下界。
-  onestep_minM 一步网络用 min-of-M（IMLE 式）损失，规避 L2 的模式平均。
-               每个目标配 M 个**互相独立**的源噪声候选（见下方"修正(viii)"）。
+Six method families
+-------------------
+  cfm_indep    Standard CFM, independent coupling (x0 ⊥ x1). Theory predicts
+               one-step rho = 0.
+  cfm_ot       OT-FM: within each mini-batch, do per-condition Hungarian optimal
+               assignment and then train.
+  reflow       Use cfm_indep's 32-step flow map to generate a deterministic pair
+               (x0, phi(x0,c)) and retrain.
+  distill      A one-step network distills the 32-step flow map with L2 (the core
+               of consistency distillation).
+  onestep_l2   A one-step network regresses x1 directly with L2 (independent
+               coupling) -- the theoretical lower bound.
+  onestep_minM A one-step network uses a min-of-M (IMLE-style) loss to avoid the
+               mode-averaging of L2. Each target is paired with M **mutually
+               independent** source-noise candidates (see "Fix (viii)" below).
 
-判据（全部预先写死，见 CRIT）
-----------------------------
-  C1 cfm_indep @NFE=1  ：ρ < 0.05 且覆盖模态 <= 1       （近似塌缩）
-  C2 cfm_indep @NFE=32 ：ρ > 0.75 且覆盖 >= 7            （多步恢复）
-  C3 cfm_ot    @NFE=1  ：ρ > 0.50                        （换耦合即救回）
-  C4 reflow    @NFE=1  ：ρ > 0.50 且覆盖 >= 6
-  C5 distill   @NFE=1  ：ρ > 0.50
-  C6 onestep_l2 @NFE=1 ：ρ < 0.05                        （L2 地板，理论为 0）
-  C7 onestep_minM@NFE=1：ρ > 0.20 且覆盖 >= 3            （非 L2 目标逃脱）
+Criteria (all hard-coded in advance; see CRIT)
+---------------------------------------------
+  C1 cfm_indep @NFE=1  : rho < 0.05 and covered modes <= 1       (approx. collapse)
+  C2 cfm_indep @NFE=32 : rho > 0.75 and coverage >= 7            (multi-step recovery)
+  C3 cfm_ot    @NFE=1  : rho > 0.50                              (coupling swap rescues)
+  C4 reflow    @NFE=1  : rho > 0.50 and coverage >= 6
+  C5 distill   @NFE=1  : rho > 0.50
+  C6 onestep_l2 @NFE=1 : rho < 0.05                              (L2 floor, theory = 0)
+  C7 onestep_minM@NFE=1: rho > 0.20 and coverage >= 3            (non-L2 objective escapes)
 """
 import json
 import os
 import sys
 import time
 
-# Windows/Anaconda：numpy 与 torch 各带一份 libiomp5md.dll，重复初始化会让进程在
-# 训练**中途**以 exit code 3 崩溃（OMP: Error #15）。必须在 import numpy/torch
-# **之前**设置。此前只有 code/_run_pipeline.py 为子进程设过它，直接跑本脚本会崩。
+# Windows/Anaconda: numpy and torch each bundle their own copy of libiomp5md.dll; a
+# duplicate initialization crashes the process **mid-training** with exit code 3
+# (OMP: Error #15). This must be set **before** importing numpy/torch. Previously
+# only code/_run_pipeline.py set it for child processes; running this script
+# directly would crash.
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
 
@@ -81,7 +99,7 @@ from provenance import attach_provenance, protocol_fingerprint, require_merge_co
 
 PROTOCOL_FILES = ["code/experiments/run_method_map.py", "code/src/provenance.py"]
 
-# ---------------------------------------------------------------- 参数
+# ---------------------------------------------------------------- parameters
 C, K, SIGMA, DIM = 4, 8, 0.25, 2
 STEPS = 8000
 BS = 384
@@ -96,12 +114,14 @@ SEEDS = (0, 1, 2, 3, 4)
 
 
 def _parse_cli(argv):
-    """解析 `--seeds 3,4` 与 `--merge`。
+    """Parse `--seeds 3,4` and `--merge`.
 
-    `--merge` 从既有 `results/method_map.json` 读出 per_seed，只补跑缺的种子，
-    最后按**并集**重算汇总与判据；否则扩容种子数就得把已算好的种子重算一遍。
-    与 run_loss_ladder.py / run_chamfer_pooled.py 里的同名函数语义一致
-    （各脚本自带一份，保持单文件可独立运行）。
+    `--merge` reads per_seed from the existing `results/method_map.json`, only
+    reruns the missing seeds, and finally recomputes the summary and criteria over
+    the **union**; otherwise expanding the seed count would force re-running all
+    already-computed seeds. The semantics match the identically-named function in
+    run_loss_ladder.py / run_chamfer_pooled.py (each script carries its own copy to
+    stay independently runnable).
     """
     seeds = list(SEEDS)
     merge = False
@@ -116,7 +136,7 @@ def _parse_cli(argv):
         elif a.startswith("--seeds="):
             seeds = [int(x) for x in a.split("=", 1)[1].replace(",", " ").split()]
         else:
-            raise SystemExit("unknown arg %r (use --seeds a,b --merge)" % a)
+            raise SystemExit("unknown argument %r (use --seeds a,b --merge)" % a)
         i += 1
     return seeds, merge
 
@@ -128,32 +148,37 @@ CRIT = dict(C1_INDEP_N1_RHO_MAX=0.05, C1_INDEP_N1_COV_MAX=1.0,
             C6_ONESTEP_L2_RHO_MAX=0.05,
             C7_MINM_N1_RHO_MIN=0.20, C7_MINM_N1_COV_MIN=3)
 
-# ---- 判据 C1 的覆盖门槛：为什么从 0 改成 1（8 个模态里最多允许 1 个）----
-# 初版写 C1_INDEP_N1_COV_MAX = 0，实测 cfm_indep@1 给出 ρ ≈ 0.0067（**远低于**
-# 0.05 阈值，理论完美证实；当时 3 种子下是 0.0069）但覆盖 0.05～0.08 —— 于是 C1 判负。
-# 复查后认定这是**判据写错**，不是理论失效：
-#   * 理论（推论 1）说的是**精确最优一步映射**恒等于 m(c)，覆盖**恰好**为 0；
-#   * 但**训练出来的**网络不可能精确等于 m(c)（实测 ρ=0.0069 而非 0），
-#     2000 个评估样本中会有个别点偶然落进某个模态的 0.6 容差球内。
-#   要求"覆盖恰好为 0"等于要求一个有限样本训练的网络达到完美，任何实现都过不了。
-# 修正后的门槛取 **8 个模态中最多 1 个**（= 12.5%），仍然极严：
-# 成功的那一侧是 8/8，失败侧是 0.08/8，中间隔了两个数量级。
+# ---- Criterion C1 coverage threshold: why changed from 0 to 1 (at most 1 of 8 modes) ----
+# The first version set C1_INDEP_N1_COV_MAX = 0; in practice cfm_indep@1 gives rho ~= 0.0067
+# (**far below** the 0.05 threshold, theory perfectly confirmed; it was 0.0069 across 3 seeds then)
+# but coverage 0.05~0.08 -- so C1 failed. On re-examination this was judged a **mis-stated
+# criterion**, not a theory failure:
+#   * Theory (Corollary 1) says the **exact optimal one-step map** is identically m(c), with
+#     coverage **exactly** 0;
+#   * but a **trained** network cannot equal m(c) exactly (rho = 0.0069 not 0 in practice),
+#     so among 2000 evaluation samples a few points incidentally fall inside some mode's 0.6
+#     tolerance ball.
+#   Requiring "coverage exactly 0" amounts to demanding a finite-sample trained network be
+#   perfect, which no implementation can pass. The corrected threshold allows **at most 1 of
+#   the 8 modes** (= 12.5%), still extremely strict: the passing side is 8/8, the failing side
+#   0.08/8, separated by two orders of magnitude.
 #
-# ---- 修正 (viii)：min-of-M 的 M 个候选必须来自**独立**源噪声 ----
-# 旧版用 X0 = np.repeat(x0, M)：同一 x0、同一 t=0、同一 c。一步网络是确定性
-# 映射（MLP，无 dropout/BN），于是 M 次前向给出**完全相同**的输出，min 的
-# argmin 恒为 0，损失在**任何**训练状态下都逐比特等于点式 L2。后果是
-# results 里 onestep_l2@1 与 onestep_minM@1 的 rho 在 3 个种子上逐比特相同
-# （0.00010386879583898434），取证见 code/archive/_probe_minm_degeneracy.py：
-# 200 步小规模训练下两条路径的 max|Δw| = 0.000e+00。
-# 这说明该行当时**没有检验任何东西**，而不是"IMLE 不能逃脱"。
-# 修正：每个目标独立抽 M 个源噪声（x0 ~ N(0,I)），即 IMLE 的原始语义；
-# 这样"选最近候选"才是一次真正的指派，梯度也才可能绕开模式平均。
+# ---- Fix (viii): the M candidates of min-of-M must come from **independent** source noise ----
+# The old version used X0 = np.repeat(x0, M): same x0, same t=0, same c. The one-step network
+# is a deterministic map (MLP, no dropout/BN), so M forward passes give **identical** outputs,
+# the argmin of the min is always 0, and the loss is bit-for-bit equal to pointwise L2 **at any**
+# training state. The consequence: in results, onestep_l2@1 and onestep_minM@1 have bit-for-bit
+# identical rho across 3 seeds (0.00010386879583898434); evidence in
+# code/archive/_probe_minm_degeneracy.py: under a 200-step small-scale training, the two paths'
+# max|Δw| = 0.000e+00. This means that row **tested nothing** at the time, rather than
+# "IMLE cannot escape". Fix: draw M independent source-noise samples per target (x0 ~ N(0,I)),
+# i.e. the original IMLE semantics; only then is "pick the nearest candidate" a genuine
+# assignment, and the gradient can plausibly bypass mode averaging.
 
 torch.set_num_threads(14)
 
 
-# ---------------------------------------------------------------- 几何
+# ---------------------------------------------------------------- geometry
 def build_geometry():
     centers = np.zeros((C, K, DIM))
     radii = np.zeros(C)
@@ -172,7 +197,7 @@ CENTERS, TR_VAR_COND = build_geometry()
 
 
 def sample_cond(n, rng, c=None):
-    """采样 (x0, x1, c)。c 为 None 时随机。"""
+    """Sample (x0, x1, c). When c is None, sample it randomly."""
     if c is None:
         c = rng.integers(0, C, size=n)
     comp = rng.integers(0, K, size=n)
@@ -182,7 +207,7 @@ def sample_cond(n, rng, c=None):
 
 
 def ot_reorder(x0, x1, c):
-    """逐条件做匈牙利指派，把 x1 重排成与 x0 的传输配对。"""
+    """Per-condition Hungarian assignment that reorders x1 into a transport pairing with x0."""
     x1 = x1.copy()
     for j in range(C):
         idx = np.where(c == j)[0]
@@ -195,7 +220,7 @@ def ot_reorder(x0, x1, c):
     return x1
 
 
-# ---------------------------------------------------------------- 模型
+# ---------------------------------------------------------------- model
 class MLP(nn.Module):
     def __init__(self, in_dim, out_dim, hidden=HIDDEN, nlayer=NLAYER):
         super().__init__()
@@ -221,12 +246,13 @@ def t_in(x, t, c):
     return torch.from_numpy(np.concatenate([x, t[:, None], onehot(c)], 1))
 
 
-# ---------------------------------------------------------------- 训练
+# ---------------------------------------------------------------- training
 def train_cfm(sample_fn, seed, steps=None, bs=BS, lr=LR, tag=""):
-    """条件流匹配。sample_fn(bs, rng) -> (x0, x1, c)。
+    """Conditional flow matching. sample_fn(bs, rng) -> (x0, x1, c).
 
-    **steps/bs 必须在调用时解析模块全局**：写成 `steps=STEPS` 的默认值会在
-    函数定义时绑定，冒烟测试改 `M.STEPS` 根本不生效（实测照跑 12000 步）。
+    **steps/bs must be resolved against module globals at call time**: a default value
+    written as `steps=STEPS` binds at function-definition time, so changing `M.STEPS`
+    in a smoke test has no effect (in practice it still ran 12000 steps).
     """
     steps = STEPS if steps is None else steps
     torch.manual_seed(seed)
@@ -252,9 +278,11 @@ def train_cfm(sample_fn, seed, steps=None, bs=BS, lr=LR, tag=""):
 
 def train_onestep(sample_fn, seed, steps=None, bs=BS, lr=LR, tag="",
                   min_m=1, target_fn=None):
-    """一步生成器。target_fn 为 None 时对 x1 回归；否则对 target_fn(x0,c) 回归。
+    """One-step generator. When target_fn is None, regress on x1; otherwise regress on
+    target_fn(x0,c).
 
-    min_m > 1 时用 min-of-M（IMLE / Chamfer 式）损失，规避 L2 的模式平均。
+    When min_m > 1, use a min-of-M (IMLE / Chamfer-style) loss to avoid the
+    mode-averaging of L2.
     """
     steps = STEPS if steps is None else steps
     torch.manual_seed(seed)
@@ -269,16 +297,18 @@ def train_onestep(sample_fn, seed, steps=None, bs=BS, lr=LR, tag="",
             x0, y, c = sample_fn(bs, rng)
         if min_m > 1:
             if target_fn is not None:
-                raise ValueError("min-of-M 需要独立耦合：target_fn 必须为 None")
-            # 修正 (viii)：M 个候选来自**互相独立**的源噪声。用 np.repeat 复制
-            # 同一个 x0 会让确定性的一步网络给出 M 个完全相同的候选，min 退化，
-            # 损失逐比特等于点式 L2（取证见模块头注释与
-            # code/archive/_probe_minm_degeneracy.py）。
+                raise ValueError("min-of-M needs an independent coupling: target_fn must be None")
+            # Fix (viii): the M candidates come from **mutually independent** source noise.
+            # Using np.repeat to copy the same x0 makes the deterministic one-step network
+            # produce M identical candidates, so the min degenerates and the loss is
+            # bit-for-bit equal to pointwise L2 (evidence in the module header comment and
+            # code/archive/_probe_minm_degeneracy.py).
             X0 = rng.normal(size=(len(y) * min_m, DIM)).astype(np.float32)
             Cc = np.repeat(c, min_m, axis=0)
             tt = np.zeros(len(X0), dtype=np.float32)
-            # 指派步必须 detach：min-of-M 的"选最近候选"不可微，
-            # 这里只借用它的**指派结果**，梯度走下面重新前向的那一次。
+            # The assignment step must be detached: min-of-M's "pick nearest candidate" is
+            # non-differentiable; here we only borrow its **assignment result**, the gradient
+            # flows through the re-forward pass below.
             pred = net(t_in(X0, tt, Cc)).detach().numpy().reshape(len(y), min_m, DIM)
             d = ((pred - y[:, None, :]) ** 2).sum(-1)          # (bs, M)
             best = d.argmin(1)
@@ -299,7 +329,7 @@ def train_onestep(sample_fn, seed, steps=None, bs=BS, lr=LR, tag="",
     return net
 
 
-# ---------------------------------------------------------------- 采样 / 度量
+# ---------------------------------------------------------------- sampling / metrics
 @torch.no_grad()
 def euler(net, x0, c, N):
     x = torch.from_numpy(x0.copy())
@@ -322,7 +352,7 @@ def mode_coverage(pred, centers_j, tol=MODE_TOL):
 
 
 def evaluate(net, seed, N, kind="flow"):
-    """在留出条件上评估：ρ（逐条件平均）与模式覆盖（逐条件平均）。"""
+    """Evaluate on held-out conditions: rho (per-condition average) and mode coverage (per-condition average)."""
     rng = np.random.default_rng(seed + 303)
     num, cov = [], []
     for j in range(C):
@@ -337,7 +367,7 @@ def evaluate(net, seed, N, kind="flow"):
 
 
 def make_pair_set(net, seed, n=None, N=32):
-    """用冻结的 32 步流映射生成确定性配对 (x0, φ(x0,c))。"""
+    """Generate a deterministic pair (x0, phi(x0,c)) using the frozen 32-step flow map."""
     n = N_PAIR if n is None else n
     rng = np.random.default_rng(seed + 404)
     x0, _, c = sample_cond(n, rng)
@@ -355,7 +385,7 @@ def pair_sampler(X0, Y, Cidx):
     return fn
 
 
-# ---------------------------------------------------------------- 主流程
+# ---------------------------------------------------------------- main flow
 def run_seed(seed):
     print("\n" + "#" * 72)
     print("# seed %d" % seed)
@@ -369,31 +399,31 @@ def run_seed(seed):
         x0, x1, c = sample_cond(bs, rng)
         return x0, ot_reorder(x0, x1, c), c
 
-    print("\n  [1/6] cfm_indep —— 标准 CFM，独立耦合")
+    print("\n  [1/6] cfm_indep -- standard CFM, independent coupling")
     net_i = train_cfm(f_indep, seed, tag="cfm_indep")
     res["cfm_indep"] = dict(nfe1=evaluate(net_i, seed, 1),
                             nfe32=evaluate(net_i, seed, 32))
 
-    print("\n  [2/6] cfm_ot —— 小批量 OT 耦合")
+    print("\n  [2/6] cfm_ot -- mini-batch OT coupling")
     net_o = train_cfm(f_ot, seed, tag="cfm_ot")
     res["cfm_ot"] = dict(nfe1=evaluate(net_o, seed, 1),
                          nfe32=evaluate(net_o, seed, 32))
 
-    print("\n  [3/6] reflow —— 用 32 步流映射生成确定性配对后重训")
+    print("\n  [3/6] reflow -- generate deterministic pairs with 32-step flow map then retrain")
     X0, Y, Cc = make_pair_set(net_i, seed)
     net_r = train_cfm(pair_sampler(X0, Y, Cc), seed, tag="reflow")
     res["reflow"] = dict(nfe1=evaluate(net_r, seed, 1))
 
-    print("\n  [4/6] distill —— 一步网络以 L2 蒸馏 32 步流映射")
+    print("\n  [4/6] distill -- one-step network distills the 32-step flow map with L2")
     net_d = train_onestep(None, seed, tag="distill",
                           target_fn=pair_sampler(X0, Y, Cc))
     res["distill"] = dict(nfe1=evaluate(net_d, seed, 1, kind="one"))
 
-    print("\n  [5/6] onestep_l2 —— 一步网络直接对 x1 做 L2（独立耦合）")
+    print("\n  [5/6] onestep_l2 -- one-step network regresses x1 directly with L2 (independent coupling)")
     net_l = train_onestep(f_indep, seed, tag="onestep_l2")
     res["onestep_l2"] = dict(nfe1=evaluate(net_l, seed, 1, kind="one"))
 
-    print("\n  [6/6] onestep_minM —— min-of-%d 损失" % M_MIN)
+    print("\n  [6/6] onestep_minM -- min-of-%d loss" % M_MIN)
     net_m = train_onestep(f_indep, seed, tag="onestep_minM", min_m=M_MIN)
     res["onestep_minM"] = dict(nfe1=evaluate(net_m, seed, 1, kind="one"))
 
@@ -410,17 +440,17 @@ def main(new_seeds, merge):
             existing = json.load(f)
         require_merge_compatible(existing, protocol_id, out)
         all_res = dict(existing.get("per_seed", {}))
-        print("merge: 载入既有种子 %s" % sorted(all_res, key=int), flush=True)
+        print("merge: loading existing seeds %s" % sorted(all_res, key=int), flush=True)
     for sd in new_seeds:
         if str(sd) in all_res:
-            print("\nskip seed %d（结果已在报告中）" % sd, flush=True)
+            print("\nskip seed %d (result already in report)" % sd, flush=True)
             continue
         all_res[str(sd)] = run_seed(sd)
 
     seeds_all = sorted(int(k) for k in all_res)
-    print("\n参与汇总的种子: %s" % seeds_all, flush=True)
+    print("\nseeds included in summary: %s" % seeds_all, flush=True)
 
-    # ---- 跨种子汇总 ----
+    # ---- cross-seed aggregation ----
     def agg(path):
         vals = [all_res[str(s)][path[0]][path[1]] for s in seeds_all]
         return dict(rho=float(np.mean([v["rho"] for v in vals])),
@@ -439,8 +469,8 @@ def main(new_seeds, merge):
     }
 
     print("\n" + "=" * 78)
-    print("跨方法族失效地图（%d 个种子平均）" % len(seeds_all))
-    print("  %-18s %-18s %-12s" % ("方法", "ρ（展布保留率）", "覆盖模态/8"))
+    print("cross-family failure map (averaged over %d seeds)" % len(seeds_all))
+    print("  %-18s %-18s %-12s" % ("method", "rho (spread retention)", "covered modes/8"))
     print("-" * 78)
     for k, v in summary.items():
         print("  %-18s %-18s %-12s"
@@ -464,7 +494,7 @@ def main(new_seeds, merge):
     verdict = "PASS" if all(checks.values()) else "PARTIAL" if sum(checks.values()) >= 5 else "FAIL"
     for k, v in checks.items():
         print("    %-32s %s" % (k, v))
-    print("  VERDICT: %s     用时 %.0fs" % (verdict, time.time() - t0))
+    print("  VERDICT: %s      elapsed %.0fs" % (verdict, time.time() - t0))
     print("=" * 78)
 
     report = dict(params=dict(C=C, K=K, sigma=SIGMA, STEPS=STEPS, BS=BS, LR=LR,
@@ -476,7 +506,7 @@ def main(new_seeds, merge):
                       PROTOCOL_FILES, merged=merge)
     with open(out, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
-    print("报告已写入 %s" % out)
+    print("report written to %s" % out)
 
 
 if __name__ == "__main__":

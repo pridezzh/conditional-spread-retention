@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""针对本次科学校核发现的问题做最小回归测试。"""
+"""Minimal regression tests for the issues found during the scientific audit."""
 import os
 import json
 import sys
@@ -20,7 +20,7 @@ from provenance import (RESULT_SCHEMA_VERSION, protocol_fingerprint,
 
 class DiscriminantAuditTests(unittest.TestCase):
     def test_marginal_separation_is_dimension_invariant_under_feature_duplication(self):
-        """重复同一坐标不应因多乘一次维度而让分离度虚高。"""
+        """Repeating the same coordinate should not inflate the separation via an extra dimension."""
         rng = np.random.default_rng(4)
         x = np.r_[rng.normal(-3, 0.2, 120), rng.normal(3, 0.2, 120)][:, None]
         sep_1, _ = marginal_separation(x, kmax=3, seed=4, pca_dim=8)
@@ -30,7 +30,8 @@ class DiscriminantAuditTests(unittest.TestCase):
         self.assertGreater(sep_1, 0.95)
 
     def test_lambda_uses_sample_weighted_pooled_variance(self):
-        """小簇不应与大簇等权；公式应等于逐样本池化残差。"""
+        """Small clusters should not be weighted equally with large ones; the formula
+        should equal the per-sample pooled residual."""
         rng = np.random.default_rng(7)
         x = np.r_[rng.normal(-4, 0.1, (180, 2)),
                   rng.normal(4, 1.0, (20, 2))]
@@ -42,14 +43,14 @@ class DiscriminantAuditTests(unittest.TestCase):
         self.assertAlmostEqual(lam, expected, places=10)
 
     def test_unimodal_gaussian_can_select_one_cluster(self):
-        """K=1 必须是可达结果，不能对任何数据都强制返回 K>=2。"""
+        """K=1 must be a reachable result; the method must not force K>=2 for arbitrary data."""
         x = np.random.default_rng(12).normal(size=(240, 2))
         self.assertEqual(_select_K(x, kmax=5, seed=12, n_null=49), 1)
 
 
 class ConditionalMetricAuditTests(unittest.TestCase):
     def test_constant_condition_uses_marginal_reference_without_label_input(self):
-        """无条件设置应抽取整个边际，且排除查询样本自身。"""
+        """The unconditional setting should draw the whole marginal and exclude the query sample itself."""
         c = np.zeros((100, 1))
         x = np.arange(100)[:, None]
         refs = conditional_reference_samples(
@@ -61,7 +62,7 @@ class ConditionalMetricAuditTests(unittest.TestCase):
         self.assertGreater(len(np.unique(refs[0][:, 0] // 10)), 3)
 
     def test_one_pass_noise_map_can_preserve_two_modes(self):
-        """理论护栏：任意单次确定性噪声映射不必退化成条件均值。"""
+        """Theoretical guardrail: an arbitrary single deterministic noise map need not collapse to the conditional mean."""
         x0 = np.linspace(-3, 3, 1000)
         one_pass = np.where(x0 < 0, -2.0, 2.0)
         self.assertAlmostEqual(one_pass.mean(), 0.0, places=12)
@@ -69,7 +70,7 @@ class ConditionalMetricAuditTests(unittest.TestCase):
         self.assertEqual(set(np.unique(one_pass)), {-2.0, 2.0})
 
     def test_dependence_does_not_imply_nonzero_conditional_mean(self):
-        """依赖耦合也可均值独立；所以“非独立 iff 不塌缩”不成立。"""
+        """Dependent coupling can still have mean independence; hence "not independent iff no collapse" does not hold."""
         x0 = np.repeat(np.array([0.5, 1.0, 2.0, 3.0]), 2)
         sign = np.tile(np.array([-1.0, 1.0]), 4)
         x1 = sign * np.abs(x0)
@@ -79,7 +80,7 @@ class ConditionalMetricAuditTests(unittest.TestCase):
         self.assertGreater(np.ptp(conditional_second_moments), 8.0)
 
     def test_knn_variance_correction_uses_total_variance(self):
-        """Bernoulli 混合耦合的残差比例是 1-alpha^2。"""
+        """The residual fraction of a Bernoulli mixture coupling is 1-alpha^2."""
         self.assertAlmostEqual(knn_variance_ratio(0.5, 20), 0.2875)
         self.assertAlmostEqual(knn_variance_ratio(0.0, 20), 0.05)
         self.assertAlmostEqual(knn_variance_ratio(1.0, 20), 1.0)
@@ -87,7 +88,7 @@ class ConditionalMetricAuditTests(unittest.TestCase):
 
 class ResultIntegrityTests(unittest.TestCase):
     def test_legacy_or_cross_revision_merge_is_rejected(self):
-        """没有 schema/指纹的旧缓存不可再与新种子静默混合。"""
+        """Old caches without schema/fingerprint must not be silently merged with new seeds."""
         with self.assertRaises(RuntimeError):
             require_merge_compatible({}, "expected", "legacy.json")
         compatible = {
@@ -97,7 +98,7 @@ class ResultIntegrityTests(unittest.TestCase):
         require_merge_compatible(compatible, "expected", "current.json")
 
     def test_protocol_fingerprint_changes_with_source(self):
-        """用于结果合并的协议指纹必须真正依赖源文件内容。"""
+        """The protocol fingerprint used for result merging must genuinely depend on the source file contents."""
         import tempfile
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "protocol.py")
@@ -110,7 +111,7 @@ class ResultIntegrityTests(unittest.TestCase):
         self.assertNotEqual(first, second)
 
     def test_training_summaries_equal_per_seed_aggregates(self):
-        """表格汇总必须能由逐种子原始值精确重算。"""
+        """Table summaries must be exactly recomputable from the per-seed raw values."""
         root = os.path.dirname(os.path.dirname(HERE))
         path = os.path.join(root, "results", "loss_ladder.json")
         with open(path, encoding="utf-8") as f:

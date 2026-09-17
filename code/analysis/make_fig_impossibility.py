@@ -1,14 +1,19 @@
 # -*- coding: utf-8 -*-
-"""论文的**主图**：不可能性定理的 α-扫描 + 跨方法族失效地图。
+"""The paper's **main figure**: the impossibility theorem's alpha-sweep plus a
+cross-method-family failure map.
 
-图的结构（两块面板，讲同一件事的两面）
+Figure structure (two panels, two sides of the same story)
 
-  (a) **α-扫描**：让 ρ 精确扫描 [0,1]，而 D̂ 与 Λ̂ 全程不动。
-      —— 这是"任何只看数据的统计量都判定不了一步"的正面证据。
-  (b) **跨方法族对照**：报告各受控实现的 ρ 及跨种子标准差。
-      —— 这些点是有限的方法样本，不支持“没有中间地带”的普遍结论。
+  (a) **alpha-sweep**: let rho sweep [0,1] exactly while D-hat and Lambda-hat stay
+      fixed throughout.
+      -- This is the positive evidence that "no data-only statistic can decide a
+         single step".
+  (b) **cross-method-family comparison**: report rho and the cross-seed standard
+      deviation for each controlled implementation.
+      -- These points are a finite sample of methods and do not support the
+         universal claim that "there is no middle ground".
 
-数据来源（全部读 JSON，不重跑实验）
+Data sources (all read from JSON, no experiment re-run)
   logs/verify_impossibility.json
   results/method_map.json
   results/method_map_chamfer.json
@@ -62,7 +67,7 @@ def main():
 
     fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.75))
 
-    # ---------------- (a) α-扫描 ----------------
+    # ---------------- (a) alpha sweep ----------------
     ax = axes[0]
     cv = imp["curve"]
     a = np.array(cv["alpha"], dtype=float)
@@ -105,7 +110,7 @@ def main():
     ax.legend(h1 + h2, l1 + l2, loc="upper left", framealpha=0.9)
     ax.set_title(r"(a)  $\rho$ sweeps $[0,1]$ while the data does not move", fontsize=9)
 
-    # ---------------- (b) 跨方法族 ----------------
+    # ---------------- (b) cross method families ----------------
     ax = axes[1]
     order = [("cfm_indep@1", "indep\nNFE=1"), ("onestep_l2@1", "1-step\n$L^2$"),
              ("onestep_minM@1", "1-step\nmin-of-8"), ("cfm_ot@1", "OT-FM\nNFE=1"),

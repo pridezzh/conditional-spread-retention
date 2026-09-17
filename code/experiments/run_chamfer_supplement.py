@@ -1,38 +1,47 @@
 # -*- coding: utf-8 -*-
-"""补充第 7 个方法族：**双向 Chamfer（集合级）**损失的一步生成器。
+"""Add a 7th method family: a one-step generator with **bidirectional Chamfer (set-level)** loss.
 
-为什么必须补这一个
-------------------
-`run_method_map.py` 里的 `onestep_minM`（min-of-M / IMLE）与本脚本的 Chamfer 机制不同，
-不能互相替代：
+Why this one must be added
+--------------------------
+`onestep_minM` (min-of-M / IMLE) in `run_method_map.py` differs mechanistically from
+the Chamfer in this script, and the two cannot substitute for each other:
 
-    min-of-M：每个**目标**只在**它自己**的 M 个候选里挑最近的一个，
-              M 条分支各自独立采样（original IMLE semantics）。
-    双向 Chamfer：第一项在**整个 batch** 上为每个目标挑最近的生成样本，
-              第二项反向。384 个样本、8 个模态，于是"最近的生成样本"多半
-              来自正确模态，不同目标被指派到不同生成样本，网络被迫**铺开**。
+    min-of-M: each **target** picks its nearest candidate only among **its own** M
+              candidates; the M branches are each sampled independently (original
+              IMLE semantics).
+    bidirectional Chamfer: the first term picks, for each target, the nearest generated
+              sample over the **whole batch**, and the second term goes the other way.
+              With 384 samples and 8 modes, the "nearest generated sample" most often
+              comes from the correct mode, different targets get assigned to different
+              generated samples, and the network is forced to **spread out**.
 
-注意（2026-09-16 修正）：min-of-M 早先的实现把同一个源噪声 repeat 了 M 次，
-在确定性的网络下 M 个候选**恒等**，损失逐比特退化为点式 L2。因此早先
-"minM 与 onestep_l2 的 loss 完全一致（4.5537 对 4.5537）"是**代码缺陷**的产物，
-不是 IMLE 的性质。修正后 min-of-M 的 M 条候选各自独立采样，是真正的集合级目标，
-其结果以 `run_method_map.py` 重跑后的 `results/method_map.json` 为准。
+Note (fix 2026-09-16): the earlier min-of-M implementation repeated the same source
+noise M times; under a deterministic network the M candidates are **identical**, and
+the loss degenerates bit-for-bit into pointwise L2. Hence the earlier observation that
+"minM and onestep_l2 have exactly the same loss (4.5537 vs 4.5537)" was a product of a
+**code defect**, not a property of IMLE. After the fix, min-of-M's M candidates are
+each independently sampled and constitute a genuine set-level objective; its results
+should be taken from `results/method_map.json` after re-running `run_method_map.py`.
 
-本脚本训练的是**整批池化**版 Chamfer（第一项的 argmin 覆盖整个 batch），
-这正是外部校核 *From Flow to One Step* (2603.09415) 与多数实现里的写法。
-它与"逐条件"版 Chamfer 的差别在论文 Sec. 5.4 中作为单独变量隔离讨论。
+This script trains the **whole-batch pooled** version of Chamfer (the first term's
+argmin covers the entire batch), which is exactly the form used in external review
+*From Flow to One Step* (2603.09415) and in most implementations. Its difference from
+the "per-condition" Chamfer is isolated as a separate variable in paper Sec. 5.4.
 
-本脚本只训练这一个方法族，协议与 `run_method_map.py` **完全一致**
-（同几何族、同架构、同 bs/步数/lr、同评估），结果可直接并入失效地图。
+This script trains only this one method family; its protocol is **fully identical** to
+`run_method_map.py` (same geometry family, same architecture, same bs/steps/lr, same
+evaluation), so its results can be merged directly into the failure map.
 """
 import json
 import os
 import sys
 import time
 
-# Windows/Anaconda：numpy 与 torch 各带一份 libiomp5md.dll，重复初始化会让进程在
-# 训练**中途**以 exit code 3 崩溃（OMP: Error #15）。必须在 import numpy/torch
-# **之前**设置。此前只有 code/_run_pipeline.py 为子进程设过它，直接跑本脚本会崩。
+# Windows/Anaconda: numpy and torch each bundle their own copy of libiomp5md.dll; a
+# duplicate initialization crashes the process **mid-training** with exit code 3
+# (OMP: Error #15). This must be set **before** importing numpy/torch. Previously
+# only code/_run_pipeline.py set it for child processes; running this script
+# directly would crash.
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
 
@@ -64,7 +73,7 @@ SEEDS = (0, 1, 2, 3, 4)
 
 
 def _parse_cli(argv):
-    """`--seeds a,b --merge`；语义与 run_method_map.py / run_loss_ladder.py 的同名函数一致。"""
+    """`--seeds a,b --merge`; semantics match the identically-named function in run_method_map.py / run_loss_ladder.py."""
     seeds = list(SEEDS)
     merge = False
     i = 0
@@ -78,7 +87,7 @@ def _parse_cli(argv):
         elif a.startswith("--seeds="):
             seeds = [int(x) for x in a.split("=", 1)[1].replace(",", " ").split()]
         else:
-            raise SystemExit("unknown arg %r (use --seeds a,b --merge)" % a)
+            raise SystemExit("unknown argument %r (use --seeds a,b --merge)" % a)
         i += 1
     return seeds, merge
 
@@ -97,12 +106,12 @@ def train_chamfer(sample_fn, seed, steps=None, bs=None, lr=M.LR, tag="chamfer"):
     for s in range(steps):
         x0, y, c = sample_fn(bs, rng)
         tt = np.zeros(len(x0), dtype=np.float32)
-        G = net(M.t_in(x0, tt, c))                       # (bs, d)，带梯度
+        G = net(M.t_in(x0, tt, c))                       # (bs, d), with grad
         with torch.no_grad():
             Gn = G.detach().numpy()
             d2 = ((y[:, None, :] - Gn[None, :, :]) ** 2).sum(-1)   # (bs, bs)
-            a1 = d2.argmin(1)                            # 目标 i -> 最近生成样本
-            a2 = d2.argmin(0)                            # 生成样本 j -> 最近目标
+            a1 = d2.argmin(1)                            # target i -> nearest generated sample
+            a2 = d2.argmin(0)                            # generated sample j -> nearest target
         l1 = ((G[a1] - torch.from_numpy(y)) ** 2).sum(-1).mean()
         l2 = ((G - torch.from_numpy(y)[a2]) ** 2).sum(-1).mean()
         loss = l1 + l2
@@ -127,10 +136,10 @@ def main(new_seeds, merge):
             existing = json.load(f)
         require_merge_compatible(existing, protocol_id, out)
         out_all = dict(existing.get("per_seed", {}))
-        print("merge: 载入既有种子 %s" % sorted(out_all, key=int), flush=True)
+        print("merge: loading existing seeds %s" % sorted(out_all, key=int), flush=True)
     for sd in new_seeds:
         if str(sd) in out_all:
-            print("\nskip seed %d（结果已在报告中）" % sd, flush=True)
+            print("\nskip seed %d (result already in report)" % sd, flush=True)
             continue
         print("\n# seed %d" % sd, flush=True)
         net = train_chamfer(lambda bs, rng: M.sample_cond(bs, rng), sd,
@@ -143,7 +152,7 @@ def main(new_seeds, merge):
               flush=True)
 
     seeds_all = sorted(int(k) for k in out_all)
-    print("\n参与汇总的种子: %s" % seeds_all, flush=True)
+    print("\nseeds included in summary: %s" % seeds_all, flush=True)
 
     rhos = [out_all[str(s)]["rho"] for s in seeds_all]
     covs = [out_all[str(s)]["coverage"] for s in seeds_all]
@@ -153,12 +162,12 @@ def main(new_seeds, merge):
     ok = summary["rho"] > M.CRIT["C7_MINM_N1_RHO_MIN"] and \
         summary["coverage"] >= M.CRIT["C7_MINM_N1_COV_MIN"]
     print("\n" + "=" * 70)
-    print("onestep_chamfer@1  rho = %.4f ± %.4f   覆盖 = %.2f"
+    print("onestep_chamfer@1  rho = %.4f ± %.4f   coverage = %.2f"
           % (summary["rho"], summary["rho_std"], summary["coverage"]))
-    print("判据（沿用 C7）: rho > %.2f 且 覆盖 >= %d   -> %s"
+    print("criterion (reusing C7): rho > %.2f and coverage >= %d   -> %s"
           % (M.CRIT["C7_MINM_N1_RHO_MIN"], M.CRIT["C7_MINM_N1_COV_MIN"],
              "PASS" if ok else "FAIL"))
-    print("用时 %.0fs" % (time.time() - t0))
+    print("elapsed %.0fs" % (time.time() - t0))
     print("=" * 70)
 
     report = dict(method="onestep_chamfer",
@@ -171,7 +180,7 @@ def main(new_seeds, merge):
                       PROTOCOL_FILES, merged=merge)
     with open(out, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
-    print("报告已写入 %s" % out)
+    print("report written to %s" % out)
 
 
 if __name__ == "__main__":

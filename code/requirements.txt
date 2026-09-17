@@ -1,12 +1,13 @@
-# 一步生成策略判别量 —— 复现依赖
-# 安装： python -m pip install -r requirements.txt
-# 全部实验在 CPU 上完成，无需 CUDA 版 PyTorch。
+# one-step generative-policy discriminant — reproduction dependencies
+# install: python -m pip install -r requirements.txt
+# all experiments run on CPU; the CUDA build of PyTorch is not required.
 #
-# 版本为开发时实测通过的版本；较新版本通常也可用，但 scipy 的
-# spearmanr / mannwhitneyu 返回类型在 1.9 前后有变化（本仓按 1.11+ 的
-# 返回对象写法，即 .statistic 属性），旧版需要改回元组解包。
+# versions are those verified to work during development; newer versions usually
+# also work, but scipy's spearmanr / mannwhitneyu return type changed around 1.9
+# (this repo uses the 1.11+ object form, i.e. the .statistic attribute); older
+# versions would require reverting to tuple unpacking.
 numpy>=1.26
 scipy>=1.11
-torch>=2.2          # CPU 版即可：pip install torch --index-url https://download.pytorch.org/whl/cpu
+torch>=2.2          # CPU build is sufficient: pip install torch --index-url https://download.pytorch.org/whl/cpu
 matplotlib>=3.8
-scikit-learn>=1.4  # 仅 MNIST 下载失败时的 digits 回退需要
+scikit-learn>=1.4  # only needed for the digits fallback when the MNIST download fails

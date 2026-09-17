@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
-"""公共工具：随机种子、计时、结果落盘。
+"""Common utilities: random seeds, timing, and result persistence.
 
-约定（写作与实验共用，保证论文中每个数字都能回溯）：
-  - 所有随机性由 seed 决定：python / numpy / torch 全部播种；
-  - 每个实验单元的结果写成一个 json（results/*.json），字段自解释；
-  - 不做任何"事后挑选"：所有种子、所有单元的结果全部落盘，
-    汇报时只做"先固定汇报配置、再跑重复种子"的合法流程。
+Conventions (shared by both writing and experiments, so every number in the
+paper can be traced back):
+  - All randomness is determined by seed: python / numpy / torch are all seeded;
+  - Each experiment unit writes one json (results/*.json) with self-explanatory fields;
+  - No "post-hoc selection": results for all seeds and all units are persisted, and
+    reporting only follows the legitimate flow of "fix the reporting config first,
+    then run repeated seeds".
 """
 import json
 import os
@@ -17,7 +19,7 @@ import torch
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 RESULTS = os.path.join(ROOT, "results")
-RESULTS_LEGACY = os.path.join(ROOT, "code", "results")   # 早期一次路径 bug 的落盘位置
+RESULTS_LEGACY = os.path.join(ROOT, "code", "results")   # Disk location from an early path-bug incident
 FIGDIR = os.path.join(ROOT, "figures")
 TABDIR = os.path.join(ROOT, "tables")
 LOGDIR = os.path.join(ROOT, "logs")
@@ -51,8 +53,10 @@ class Timer(object):
 
 
 def save_result(name, obj):
-    # 结果文件必须携带科学口径版本。代码改过而旧 JSON 仍可被汇总，是比运行报错
-    # 更危险的失败方式；下游脚本会拒绝协议不匹配的历史结果。
+    # Result files must carry the scientific schema version. Code changes that
+    # still let old JSON be aggregated is a more dangerous failure mode than a
+    # runtime error; downstream scripts reject historical results whose protocol
+    # does not match.
     obj["result_schema_version"] = RESULT_SCHEMA_VERSION
     obj["discriminant_protocol"] = DISCRIMINANT_PROTOCOL
     path = os.path.join(RESULTS, name + ".json")
@@ -81,14 +85,15 @@ def load_results(prefix=""):
     for d in (RESULTS, RESULTS_LEGACY):
         for r in _scan(d):
             if prefix and not str(r.get("tag", "")).startswith(prefix):
-                # 兼容：按文件名前缀过滤在调用侧做，这里按内容不过滤
+                # Compatibility: filename-prefix filtering is done on the caller
+                # side; no content filtering is applied here.
                 pass
             out.append(r)
     return out
 
 
 def load_result_files(prefix=""):
-    """按**文件名**前缀读取（更可靠），返回 [(名字, 内容), ...]。"""
+    """Read by **filename** prefix (more robust); returns [(name, content), ...]."""
     out = []
     for d in (RESULTS, RESULTS_LEGACY):
         if not os.path.isdir(d):
@@ -110,7 +115,8 @@ def mean_std(xs):
 
 
 def bootstrap_ci(xs, n_boot=2000, alpha=0.05, seed=0):
-    """对均值做自助置信区间（论文中所有误差棒/区间都用同一个函数）。"""
+    """Bootstrap confidence interval for the mean (every error bar / interval in the
+    paper uses this same function)."""
     xs = np.asarray(xs, dtype=float)
     if len(xs) < 2:
         return float(xs.mean()), float(xs.mean())

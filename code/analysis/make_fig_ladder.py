@@ -1,24 +1,32 @@
 # -*- coding: utf-8 -*-
-"""损失阶梯图（论文图 2）。
+"""Loss-ladder figure (paper Figure 2).
 
-左面板是这张图的全部要点：**生成的逐条件展布 vs 真实的逐条件展布**。
-  * 落在对角线上  = 恢复了逐条件总方差（不等于恢复完整条件律）；
-  * 压成一条**水平线** = 只恢复了支撑集、跨条件权重是错的；
-  * 缩到原点      = 塌缩。
+The left panel is the whole point of this figure: **generated per-condition
+spread vs true per-condition spread**.
+  * on the diagonal      = recovered per-condition total variance (not the same as
+                           recovering the full conditional law);
+  * flattened to a **horizontal line** = only the support was recovered; the
+                           cross-condition weights are wrong;
+  * shrunk to the origin = collapse.
 
-修正后（2026-09-16）这里有**四条**曲线，不是三条。多出来的一条是把非平衡 Chamfer
-改成**逐条件**匹配之后的版本，与 Thm 4(L2) 的表述严格对齐。实测结论因此被改写：
+After revision (2026-09-16) there are **four** curves here, not three. The extra
+one is the version of unbalanced Chamfer changed to **per-condition** matching,
+strictly aligned with the statement of Thm 4 (L2). The empirical conclusion is
+therefore rewritten:
 
-  * 池化版（L2a，实践里通常的写法）确实压成水平线；
-  * 逐条件版（L2b）基本回到对角线；
-  * 平衡版（L3）在对角线附近且保真度（条件 sliced W2）更好。
+  * the pooled version (L2a, the usual practical implementation) does flatten to a
+    horizontal line;
+  * the per-condition version (L2b) essentially returns to the diagonal;
+  * the balanced version (L3) sits near the diagonal and has better fidelity
+    (conditional sliced W2).
 
-也就是说「支撑恢复、权重自由」这个指纹的来源是**池化**，不是非平衡性——这正是把
-混淆因子消掉之后才能看见的东西。
+In other words, the signature "support recovered, weights free" comes from
+**pooling**, not from unbalance -- this is exactly what becomes visible only after
+removing the confound.
 
-数据来源（只读 JSON，不重跑实验）：
-  results/loss_ladder.json                                    → L1 / L2b / L3
-  results/chamfer_pooled.json                                 → L2a
+Data sources (read-only JSON, no experiment re-run):
+  results/loss_ladder.json                                    -> L1 / L2b / L3
+  results/chamfer_pooled.json                                 -> L2a
 """
 import json
 import os
@@ -47,7 +55,7 @@ SRC = os.path.join(ROOT, "results", "loss_ladder.json")
 SRC_POOLED = os.path.join(ROOT, "results", "chamfer_pooled.json")
 OUT = os.path.join(ROOT, "figures", "fig_loss_ladder")
 
-# (来源, JSON 里的键, 图例, 颜色, 标记)
+# (source, JSON key, legend, color, marker)
 METHODS = [
     ("ladder", "onestep_l2", r"L1  pointwise $L^2$", "#999999", "o"),
     ("pooled", None, "L2a  unbalanced, POOLED over conditions", "#d1495b", "s"),
@@ -58,7 +66,7 @@ TICK_LABELS = ["L1", "L2a", "L2b", "L3"]
 
 
 def _per_cond(src, key, sd):
-    """取某个方法在某个种子下的逐条件 rho_j。"""
+    """Get a method's per-condition rho_j for a given seed."""
     if src == "pooled":
         return np.array(POOLED["per_seed"][sd]["rho_per_cond"], dtype=np.float64)
     return np.array(LADDER["per_seed"][sd][key]["rho_per_cond"], dtype=np.float64)
@@ -85,7 +93,7 @@ def main():
 
     fig, axes = plt.subplots(1, 2, figsize=(9.9, 3.4))
 
-    # ---------------- 左：生成的 vs 真实的逐条件展布 ----------------
+    # ---------------- left: generated vs true per-condition spread ----------------
     ax = axes[0]
     lo = 0.0
     hi = float(tv.max()) * 1.25
@@ -108,7 +116,7 @@ def main():
     ax.grid(alpha=0.25, lw=0.5)
     ax.tick_params(labelsize=8)
 
-    # ---------------- 右：保真度与展布误差 ----------------
+    # ---------------- right: fidelity and spread error ----------------
     ax = axes[1]
     csw = [_summary(s, k)["csw"] for s, k, _, _, _ in usable]
     csw_e = [_summary(s, k)["csw_std"] for s, k, _, _, _ in usable]

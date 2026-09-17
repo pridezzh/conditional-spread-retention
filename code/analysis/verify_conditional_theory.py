@@ -1,45 +1,52 @@
 # -*- coding: utf-8 -*-
-"""条件情形下的耦合-确定性定理：受控几何族上的完整验证。
+"""Conditional coupling-determinism theorem: full validation on a controlled geometry family.
 
-为什么必须做条件版
-------------------
-论文关心的是**策略** pi(a|s)，即条件生成。无条件版的所有结论都要在
-"固定条件 c 之后"重新验证一遍，因为：
+Why a conditional version is required
+-------------------------------------
+The paper concerns the **policy** pi(a|s), i.e. conditional generation. Every
+conclusion of the unconditional version must be re-verified "after fixing the
+condition c", because:
 
-  * 判别量 D（条件未解释方差占比）是按 c 定义的；
-  * 一步映射 f_1(., c) 的塌缩必须逐 c 成立才是真塌缩；
-  * 最重要的：本实验要证明 **D 相同但 rho 天差地别**。
+  * the discriminative quantity D (fraction of variance unexplained by condition)
+    is defined per c;
+  * the collapse of the one-step map f_1(., c) must hold per c to be a true collapse;
+  * most importantly, this experiment must demonstrate **identical D but wildly
+    different rho**.
 
-受控设计（本脚本的核心）
-------------------------
-固定**同一个**条件数据分布 p(x1|c)：
-    条件 j 上，x1 服从 K 个等权高斯的环上混合，
-    环心 = 平移 b_j + 半径 R_j 的旋转环，分量方差 sigma^2。
-于是 tr Var(x1|j) = R_j^2 + d sigma^2（闭式），E[x1|j] = b_j。
+Controlled design (the core of this script)
+-------------------------------------------
+Fix the **same** conditional data distribution p(x1|c):
+    under condition j, x1 follows a ring mixture of K equal-weight Gaussians,
+    ring center = translated b_j + radius R_j rotated ring, component variance sigma^2.
+Hence tr Var(x1|j) = R_j^2 + d sigma^2 (closed form), E[x1|j] = b_j.
 
-在这个**完全相同的边缘分布**上，只改训练目标里的耦合：
+On this **identical marginal distribution**, only the coupling in the training
+objective is changed:
 
-  * 独立耦合（标准 CFM / DDPM 的做法）：x0 独立于 x1；
-  * 传输耦合（reflow / OT-FM / 一致性蒸馏 / IMLE 的本质）：x0 与 x1
-    按最优传输一一配对，几乎确定性地对应。
+  * independent coupling (the standard CFM / DDPM approach): x0 independent of x1;
+  * transport coupling (the essence of reflow / OT-FM / consistency distillation /
+    IMLE): x0 and x1 are paired one-to-one by optimal transport, almost deterministic.
 
-两者的数据边缘分布逐样本相同 ⇒ D 相同（判据 C5），
-但一步映射的展布保留率 rho 应当差一个数量级以上（判据 C4）。
+Both have identical per-sample data marginals -> D identical (criterion C5),
+but the spread-preservation rate rho of the one-step map should differ by an order
+of magnitude or more (criterion C4).
 
-精确条件速度场
---------------
-与无条件版同理（联合高斯的线性条件期望），对给定条件 j：
+Exact conditional velocity field
+--------------------------------
+As in the unconditional case (linear conditional expectation of a joint Gaussian),
+for a given condition j:
 
     u(x, t, j) = sum_k w_k(x,t,j) [ mu_{j,k} + ((t sigma^2 - (1-t)) / s_t^2) (x - t mu_{j,k}) ]
     w_k(x,t,j) ∝ N(x ; t mu_{j,k}, s_t^2 I),   s_t^2 = (1-t)^2 + t^2 sigma^2
 
-t = 0 时 w_k 与 k 无关（N(x;0,I) 公共因子），括号化为 mu_{j,k} - x，故
+At t = 0, w_k is independent of k (common factor N(x;0,I)), so the bracket reduces
+to mu_{j,k} - x, and therefore
 
-    u(x, 0, j) = mean_k mu_{j,k} - x = b_j - x        ← 条件版端点恒等式
-    f_1(x0, j) = x0 + u(x0, 0, j) = b_j  与 x0 无关 ⇒ rho_1(j) = 0
+    u(x, 0, j) = mean_k mu_{j,k} - x = b_j - x        <- conditional endpoint identity
+    f_1(x0, j) = x0 + u(x0, 0, j) = b_j   independent of x0 => rho_1(j) = 0
 
-用闭式速度场可以彻底排除"网络拟合误差"这个混淆因素，
-把"离散化 / 耦合"的机制单独隔离出来。
+Using the closed-form velocity field completely removes the confounding factor of
+"network fitting error", isolating the "discretization / coupling" mechanism alone.
 """
 import json
 import os
@@ -63,28 +70,29 @@ sys.path.insert(0, os.path.join(ROOT, "code", "src"))
 import numpy as np  # noqa: E402
 from scipy.optimize import linear_sum_assignment  # noqa: E402
 
-# ---------------------------------------------------------------- 实验参数
-C = 4               # 条件个数
-K = 8               # 每个条件下的模态数
-SIGMA = 0.25        # 各模态的内禀标准差
+# ---------------------------------------------------------------- experiment parameters
+C = 4               # number of conditions
+K = 8               # number of modes per condition
+SIGMA = 0.25        # intrinsic std of each mode
 DIM = 2
-N_EXACT = 3000      # 精确速度场实验每个条件的样本数
-N_OT = 600          # 传输耦合实验每个条件的样本数（Hungarian 是 O(n^3)）
-N_QUERY = 600       # 估计 rho 时用的查询点数（与训练集分开，避免过拟合）
-K_LIST = (1, 2, 5, 10, 20, 30)     # kNN 的 k；有效区要求 k <= n/20 = 30
+N_EXACT = 3000      # samples per condition for the exact velocity-field experiment
+N_OT = 600          # samples per condition for the transport-coupling experiment (Hungarian is O(n^3))
+N_QUERY = 600       # query points used to estimate rho (kept separate from the training set to avoid overfitting)
+K_LIST = (1, 2, 5, 10, 20, 30)     # k for kNN; valid regime requires k <= n/20 = 30
 N_LIST = (1, 2, 4, 8, 16, 32, 64, 128, 256)
-MODE_TOL = 0.6      # 判定"覆盖到某模态"的距离容差
+MODE_TOL = 0.6      # distance tolerance for deciding a mode is "covered"
 SEED = 0
 
 
-# ---------------------------------------------------------------- 几何族
+# ---------------------------------------------------------------- geometry family
 def build_geometry():
-    """返回每个条件的环心 (C, K, DIM)、条件均值 b_j、闭式 tr Var(x1|j)。"""
+    """Return the ring centers (C, K, DIM) per condition, the conditional mean b_j,
+    and the closed-form tr Var(x1|j)."""
     centers = np.zeros((C, K, DIM))
     b = np.zeros((C, DIM))
     radii = np.zeros(C)
     for j in range(C):
-        # 条件均值随 j 平移 —— 保证 D < 1（有条件可解释的部分）
+        # conditional mean shifts with j -- guarantees D < 1 (the conditionally explainable part)
         b[j] = np.array([1.6 * (j / (C - 1)) - 0.8, 0.9 * (j / (C - 1)) - 0.45])
         R = 1.5 + 0.4 * j
         radii[j] = R
@@ -92,13 +100,14 @@ def build_geometry():
         for k in range(K):
             th = k * (2.0 * np.pi / K) + phi
             centers[j, k] = b[j] + R * np.array([np.cos(th), np.sin(th)])
-    # 闭式：等权环上混合的均值就是 b_j，故 tr Var(x1|j) = R_j^2 + d sigma^2
+    # closed form: the mean of an equal-weight ring mixture is b_j, hence tr Var(x1|j) = R_j^2 + d sigma^2
     tr_var_cond = radii ** 2 + DIM * SIGMA ** 2
     return centers, b, radii, tr_var_cond
 
 
 def sample_x1(centers, n_per_cond, rng):
-    """从条件混合中采样：条件 j 的第 i 个样本属于随机模态。"""
+    """Sample from the conditional mixture: the i-th sample under condition j belongs
+    to a random mode."""
     out = np.zeros((C, n_per_cond, DIM))
     for j in range(C):
         comp = rng.integers(0, K, size=n_per_cond)
@@ -106,9 +115,10 @@ def sample_x1(centers, n_per_cond, rng):
     return out
 
 
-# ---------------------------------------------------------------- 精确速度场
+# ---------------------------------------------------------------- exact velocity field
 class ConditionalExactVelocity:
-    """独立耦合下、逐条件的**精确**边缘 CFM 速度场（闭式，无训练误差）。"""
+    """Per-condition **exact** marginal CFM velocity field under independent coupling
+    (closed form, no training error)."""
 
     def __init__(self, centers):
         self.centers = np.asarray(centers, dtype=np.float64)   # (C,K,D)
@@ -118,7 +128,7 @@ class ConditionalExactVelocity:
         mu = self.centers[j]                                    # (K,D)
         s2 = (1.0 - t) ** 2 + t ** 2 * SIGMA ** 2
         diff = x[:, None, :] - t * mu[None, :, :]               # (n,K,D)
-        logp = -0.5 * (diff ** 2).sum(-1) / s2                  # 等权，无 log w
+        logp = -0.5 * (diff ** 2).sum(-1) / s2                  # equal weights, no log w
         logp -= logp.max(axis=1, keepdims=True)
         w = np.exp(logp)
         w /= w.sum(axis=1, keepdims=True)
@@ -128,7 +138,7 @@ class ConditionalExactVelocity:
 
 
 def euler_map_cond(vel, x0, j, N):
-    """N 步显式欧拉，步长 1/N，返回 f_N(x0, j)。"""
+    """N-step explicit Euler with step 1/N, returns f_N(x0, j)."""
     x = np.array(x0, dtype=np.float64, copy=True)
     h = 1.0 / N
     for i in range(N):
@@ -141,16 +151,18 @@ def mode_coverage(pred, centers_j, tol=MODE_TOL):
     return int((np.sqrt(d2.min(axis=0)) < tol).sum())
 
 
-# ---------------------------------------------------------------- 估计器
+# ---------------------------------------------------------------- estimators
 def knn_uniform(X_train, Y_train, X_query, k):
-    """等权 kNN 回归。用等权（而非距离加权）才能暴露 1/k 方差律。"""
+    """Uniform-weight kNN regression. Uniform weights (not distance-weighted) are
+    needed to expose the 1/k variance law."""
     d2 = ((X_query[:, None, :] - X_train[None, :, :]) ** 2).sum(-1)
     idx = np.argpartition(d2, kth=k - 1, axis=1)[:, :k]
     return Y_train[idx].mean(axis=1)
 
 
 def ot_pairing(x0, x1):
-    """最优传输配对：返回与 x0 一一对应的 x1（Hungarian 解 L2 传输问题）。"""
+    """Optimal-transport pairing: returns the x1 paired one-to-one with x0
+    (Hungarian solution to the L2 transport problem)."""
     d2 = ((x0[:, None, :] - x1[None, :, :]) ** 2).sum(-1)
     r, c = linear_sum_assignment(d2)
     return x1[c]
@@ -161,48 +173,48 @@ def tr_var(a):
 
 
 def d_hat(X1_by_cond):
-    """D = E_c[tr Var(x1|c)] / tr Var(x1)（条件未解释方差占比）。"""
+    """D = E_c[tr Var(x1|c)] / tr Var(x1) (fraction of variance unexplained by condition)."""
     within = float(np.mean([tr_var(X1_by_cond[j]) for j in range(C)]))
     total = tr_var(X1_by_cond.reshape(-1, X1_by_cond.shape[-1]))
     return within / total
 
 
-# ---------------------------------------------------------------- 主流程
+# ---------------------------------------------------------------- main flow
 def main():
     rng = np.random.default_rng(SEED)
     centers, b, radii, tr_var_cond = build_geometry()
     vel = ConditionalExactVelocity(centers)
 
     print("=" * 72)
-    print("条件情形下的耦合-确定性定理验证（受控几何族）")
-    print("  C=%d 个条件，每个条件 K=%d 环上高斯混合，sigma=%.2f" % (C, K, SIGMA))
-    print("  逐条件闭式 tr Var(x1|j) = %s" % np.round(tr_var_cond, 4).tolist())
+    print("Conditional coupling-determinism theorem verification (controlled geometry family)")
+    print("  C=%d conditions, each with K=%d ring Gaussian mixture, sigma=%.2f" % (C, K, SIGMA))
+    print("  per-condition closed-form tr Var(x1|j) = %s" % np.round(tr_var_cond, 4).tolist())
     print("=" * 72)
 
-    # ================= 检验 1：条件版端点恒等式 =================
-    print("\n[检验 1] 条件版端点恒等式  u(x,0,j) = b_j - x")
+    # ================= Test 1: conditional endpoint identity =================
+    print("\n[Test 1] Conditional endpoint identity  u(x,0,j) = b_j - x")
     errs = []
     for j in range(C):
         X0 = rng.normal(size=(N_EXACT, DIM))
         u0 = vel(X0, 0.0, j)
         errs.append(float(np.abs(u0 - (b[j] - X0)).max()))
-        print("    条件 %d: max|u(x,0,j)-(b_j-x)| = %.3e" % (j, errs[-1]))
+        print("    cond %d: max|u(x,0,j)-(b_j-x)| = %.3e" % (j, errs[-1]))
     endpoint_ok = max(errs) < 1e-9
 
-    # ================= 检验 2：逐条件一步塌缩 =================
-    print("\n[检验 2] 一步映射  f_1(x0,j) = b_j  ⇒ rho_1(j) = 0")
+    # ================= Test 2: per-condition one-step collapse =================
+    print("\n[Test 2] One-step map  f_1(x0,j) = b_j  => rho_1(j) = 0")
     X0_all = rng.normal(size=(C, N_EXACT, DIM))
     rho1 = []
     for j in range(C):
         f1 = euler_map_cond(vel, X0_all[j], j, 1)
         s = tr_var(f1)
-        print("    条件 %d: tr Var(f_1) = %.3e   rho_1 = %.3e   覆盖模态 %d/%d"
+        print("    cond %d: tr Var(f_1) = %.3e   rho_1 = %.3e   modes covered %d/%d"
               % (j, s, s / tr_var_cond[j], mode_coverage(f1, centers[j]), K))
         rho1.append(s / tr_var_cond[j])
     collapse_ok = max(rho1) < 1e-6
 
-    # ================= 检验 3：逐条件 rho_N 单调上升到 1 =================
-    print("\n[检验 3] 逐条件 rho_N 随步数上升")
+    # ================= Test 3: per-condition rho_N rises monotonically to 1 =================
+    print("\n[Test 3] Per-condition rho_N rises with step count")
     sweep = {j: [] for j in range(C)}
     for N in N_LIST:
         line = []
@@ -226,25 +238,25 @@ def main():
         num = np.mean([tr_var(euler_map_cond(vel, X0_all[j], j, N)) for j in range(C)])
         pooled[N] = num / float(np.mean(tr_var_cond))
 
-    # ================= 检验 4/5：同 D 不同耦合 =================
-    print("\n[检验 4] 同一条件分布上，只改耦合（数据边缘分布逐样本相同）")
+    # ================= Tests 4/5: same D, different coupling =================
+    print("\n[Test 4] On the same conditional distribution, only the coupling changes (per-sample data marginals identical)")
     X0_ot = rng.normal(size=(C, N_OT, DIM))
-    X1_ind = sample_x1(centers, N_OT, rng)          # 独立耦合：x1 与 x0 无关
-    X1_det = np.zeros_like(X1_ind)                  # 传输耦合：逐条件 Hungarian 配对
+    X1_ind = sample_x1(centers, N_OT, rng)          # independent coupling: x1 independent of x0
+    X1_det = np.zeros_like(X1_ind)                  # transport coupling: per-condition Hungarian pairing
     for j in range(C):
         X1_det[j] = ot_pairing(X0_ot[j], X1_ind[j])
 
     D_ind = d_hat(X1_ind)
     D_det = d_hat(X1_det)
-    print("    D(独立耦合)   = %.4f" % D_ind)
-    print("    D(传输耦合)   = %.4f" % D_det)
-    print("    |D_ind-D_det| = %.4f   （应≈0：数据边缘分布相同）" % abs(D_ind - D_det))
+    print("    D(independent)   = %.4f" % D_ind)
+    print("    D(transport)     = %.4f" % D_det)
+    print("    |D_ind-D_det| = %.4f   (should be ~0: data marginals identical)" % abs(D_ind - D_det))
     d_invariant_ok = abs(D_ind - D_det) < 0.03
 
     Xq = rng.normal(size=(C, N_QUERY, DIM))
     rows = []
-    print("\n    等权 kNN 一步映射的展布保留率 rho_hat(k)（有效区 k <= n/20 = %d）" % (N_OT // 20))
-    print("    %-5s %-14s %-14s %-10s %-10s" % ("k", "独立 rho", "传输 rho", "比值", "1/k 律校验"))
+    print("\n    Uniform-weight kNN one-step spread-preservation rate rho_hat(k) (valid regime k <= n/20 = %d)" % (N_OT // 20))
+    print("    %-5s %-14s %-14s %-10s %-10s" % ("k", "indep rho", "trans rho", "ratio", "1/k law check"))
     for k in K_LIST:
         num_i = np.mean([tr_var(knn_uniform(X0_ot[j], X1_ind[j], Xq[j], k)) for j in range(C)])
         num_d = np.mean([tr_var(knn_uniform(X0_ot[j], X1_det[j], Xq[j], k)) for j in range(C)])
@@ -255,11 +267,11 @@ def main():
         print("    %-5d %-14.4f %-14.4f %-10.1f %-10.3f"
               % (k, ri, rd, rd / max(ri, 1e-12), k * ri))
 
-    # 在 kNN 一致的有效区（k <= n/20）判定对比度
+    # judge contrast within the kNN-consistent valid regime (k <= n/20)
     valid = [r for r in rows if r["k"] <= N_OT // 20]
     best = max(valid, key=lambda r: r["ratio"])
     contrast_ok = best["ratio"] > 10.0
-    # 1/k 律：独立耦合下 k * rho_hat(k) 应≈1（允许估计波动）
+    # 1/k law: under independent coupling k * rho_hat(k) should be ~1 (allowing estimation noise)
     law_vals = [r["k_times_rho_ind"] for r in valid if r["k"] >= 2]
     law_ok = all(0.7 <= v <= 1.4 for v in law_vals)
 
@@ -275,10 +287,10 @@ def main():
     verdict = "PASS" if all(checks.values()) else "FAIL"
 
     print("\n" + "=" * 72)
-    print("判据（全部预先声明，未事后放宽）")
+    print("Criteria (all pre-declared, not relaxed post-hoc)")
     for kk, vv in checks.items():
         print("    %-38s %s" % (kk, vv))
-    print("  最大对比度 %.1fx  (k=%d)" % (best["ratio"], best["k"]))
+    print("  max contrast %.1fx  (k=%d)" % (best["ratio"], best["k"]))
     print("  VERDICT: %s" % verdict)
     print("=" * 72)
 
@@ -303,7 +315,7 @@ def main():
     out = os.path.join(logs, "verify_conditional_theory.json")
     with open(out, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
-    print("报告已写入 %s" % out)
+    print("Report written to %s" % out)
 
 
 if __name__ == "__main__":

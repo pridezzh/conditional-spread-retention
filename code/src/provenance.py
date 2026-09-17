@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
-"""实验产物的最小可追溯元数据。
+"""Minimal traceable metadata for experiment artifacts.
 
-结果文件过去只保存汇总数字；`--merge` 因而可能把不同代码版本的种子混在一起。
-本模块给每个产物附上生成脚本及其依赖的 SHA-256 指纹，并在合并前强制核对。
+Result files used to store only summary numbers; ``--merge`` could therefore mix
+seeds from different code versions. This module attaches the generating script and
+the SHA-256 fingerprints of its dependencies to each artifact, and enforces a check
+before merging.
 """
 from __future__ import annotations
 
@@ -24,7 +26,7 @@ def sha256_file(path: str) -> str:
 
 
 def protocol_fingerprint(root: str, relative_paths: list[str]) -> tuple[str, dict[str, str]]:
-    """返回依赖文件的总指纹和逐文件指纹。"""
+    """Return the joint fingerprint of the dependency files and the per-file fingerprints."""
     hashes: dict[str, str] = {}
     joint = hashlib.sha256()
     for rel in sorted(relative_paths):
@@ -55,12 +57,13 @@ def attach_provenance(payload: dict, root: str, generator: str,
 
 
 def require_merge_compatible(existing: dict, expected_protocol_id: str, path: str) -> None:
-    """拒绝来源不明或代码版本不同的缓存合并。"""
+    """Reject merging caches of unknown origin or a different code version."""
     schema = existing.get("result_schema_version")
     got = existing.get("provenance", {}).get("protocol_id")
     if schema != RESULT_SCHEMA_VERSION or got != expected_protocol_id:
         raise RuntimeError(
-            "拒绝合并来源不明或协议不一致的结果 %s；请不带 --merge 完整重跑。"
-            " expected schema=%s protocol=%s, got schema=%r protocol=%r"
+            "refusing to merge result %s of unknown origin or mismatched protocol; "
+            "rerun in full without --merge. expected schema=%s protocol=%s, "
+            "got schema=%r protocol=%r"
             % (path, RESULT_SCHEMA_VERSION, expected_protocol_id, schema, got)
         )

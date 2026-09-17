@@ -1,34 +1,37 @@
 # -*- coding: utf-8 -*-
-"""一键编译论文：pdflatex -> bibtex -> pdflatex -> pdflatex。
+"""One-shot paper build: pdflatex -> bibtex -> pdflatex -> pdflatex.
 
-为什么要单独写一个脚本，而不是直接敲命令：
-  1. ICLR 样式文件放在 paper/iclr2027/ 子目录里，必须给 pdflatex 设
-     TEXINPUTS，否则报 "File `iclr2027_conference.sty' not found"。
-  2. 本项目在 Windows/Git-Bash 下跑，shell 里 head/tail/dirname 可能缺失，
-     所以所有输出都落盘再解析，不依赖管道。
-  3. 编译完自动汇总：有无未定义引用 / 未定义控制序列 / Overfull 页数，
-     以及正文字数，避免"编译通过"被当成"没问题"。
+Why a dedicated script instead of typing commands directly:
+  1. The ICLR style files live in paper/iclr2027/, so pdflatex must be given
+     TEXINPUTS, otherwise it errors "File `iclr2027_conference.sty' not found".
+  2. This project runs under Windows/Git-Bash, where shell utilities such as
+     head/tail/dirname may be missing, so all output is written to disk and then
+     parsed -- no reliance on pipes.
+  3. After building, it summarizes: undefined references / undefined control
+     sequences / Overfull page count, plus main-text word count, to avoid
+     treating "compiles" as "no problems".
 
-用法:
-  python build_paper.py            # 编译并汇总
-  python build_paper.py --clean     # 先删 aux 再编译
+Usage:
+  python build_paper.py            # build and summarize
+  python build_paper.py --clean     # delete aux files first, then build
 """
 import argparse
 import io
 import os
 import re
+import shutil
 import subprocess
 import sys
 
-TEXLIVE = r"E:\texlive\bin\windows"
-PDFLATEX = os.path.join(TEXLIVE, "pdflatex.exe")
-BIBTEX = os.path.join(TEXLIVE, "bibtex.exe")
+# Resolve TeX Live binaries from PATH so the build is portable across machines.
+PDFLATEX = shutil.which("pdflatex") or "pdflatex"
+BIBTEX = shutil.which("bibtex") or "bibtex"
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
 
 def _find_root(d):
-    """向上找到同时含 code/ 与 paper/ 的一级；与脚本自身深度无关。"""
+    """Walk up to the top level that contains both code/ and paper/; independent of the script's own depth."""
     while os.path.dirname(d) != d:
         if os.path.isdir(os.path.join(d, "code")) and os.path.isdir(os.path.join(d, "paper")):
             return d
@@ -47,13 +50,17 @@ AUX_EXT = [".aux", ".log", ".out", ".toc", ".bbl", ".blg", ".pdf", ".fls",
 
 def env_with_sty():
     env = dict(os.environ)
-    # 两个坑，都实测过：
-    # 1) kpathsea 把 TEXINPUTS 里的 \ 当转义字符 -> 必须用正斜杠；
-    # 2) 本项目路径含中文，把**绝对路径**写进 TEXINPUTS 后 pdflatex 找不到文件
-    #    （kpsewhich 能列出但 \openin 失败）。用相对路径即可绕开。
-    # 末尾的 ';' 很关键：没有它就会丢掉系统默认搜索路径，连 article.cls 都找不到。
+    # Two pitfalls, both verified empirically:
+    # 1) kpathsea treats \ in TEXINPUTS as an escape character -> must use
+    #    forward slashes;
+    # 2) this project's path contains non-ASCII characters; writing the
+    #    **absolute path** into TEXINPUTS makes pdflatex unable to find files
+    #    (kpsewhich can list them but \openin fails). Use a relative path to
+    #    avoid this.
+    # The trailing ';' is critical: without it the system default search path is
+    # dropped and even article.cls cannot be found.
     env["TEXINPUTS"] = "./iclr2027;"
-    # bibtex 查 .bst 用 BSTINPUTS（不是 TEXINPUTS），少了会报
+    # bibtex looks up .bst via BSTINPUTS (not TEXINPUTS); omitting it raises
     # "I couldn't open style file iclr2027_conference.bst"
     env["BSTINPUTS"] = "./iclr2027;"
     env["BIBINPUTS"] = ".;"
@@ -79,9 +86,11 @@ def main():
     args = ap.parse_args()
 
     if args.clean:
-        # 容错清理：Windows 下 main.pdf 常被预览器/阅读器占用（WinError 5 或
-        # 回收站被安全删除层拦截），此时删不掉**不该**中断编译——pdflatex 本来
-        # 就会覆盖同名文件。原来直接 os.remove 会让整个 build 在第一步就挂掉。
+        # Tolerant cleanup: under Windows main.pdf is often locked by a previewer
+        # /reader (WinError 5 or intercepted by the safe-delete layer), so it
+        # cannot be deleted -- but that **must not** abort the build, since
+        # pdflatex will overwrite the same-named file anyway. The original direct
+        # os.remove would crash the entire build at the very first step.
         locked = []
         for ext in AUX_EXT:
             p = os.path.join(PAPER, "main" + ext)
@@ -91,9 +100,9 @@ def main():
                 os.remove(p)
             except OSError as e:
                 locked.append("main" + ext)
-                print("  [warn] 无法删除 main%s（被占用？）：%s" % (ext, e.__class__.__name__))
+                print("  [warn] cannot delete main%s (locked?): %s" % (ext, e.__class__.__name__))
         if locked:
-            print("  [warn] 继续编译，交由 pdflatex 覆盖：%s" % ", ".join(locked))
+            print("  [warn] continuing build; letting pdflatex overwrite: %s" % ", ".join(locked))
 
     env = env_with_sty()
     logs = []
@@ -108,9 +117,10 @@ def main():
     with io.open(os.path.join(PAPER, "_build.log"), "w", encoding="utf-8") as f:
         f.write(blob)
 
-    # 关键：未定义引用/引文只在**最后一遍**才有意义。
-    # 第一遍 aux 还是空的，所有 \ref \cite 都会报 undefined，
-    # 拿四遍拼接的日志去统计会得到一份全是假阳性的清单。
+    # Critical: undefined references/citations are only meaningful on the
+    # **last pass**. On the first pass the aux file is still empty, so every
+    # \ref \cite reports undefined; tallying across the four concatenated logs
+    # yields a list that is all false positives.
     final_log = ""
     lp = os.path.join(PAPER, "main.log")
     if os.path.isfile(lp):
@@ -125,17 +135,19 @@ def main():
         print("PDF            : ** NOT PRODUCED **")
 
     last_pass = logs[-1]
-    # 三类错误都要抓：
-    #  1) 普通 TeX 错误以 "!" 开头；
-    #  2) 因为我们传了 -file-line-error，LaTeX Error 会写成
+    # Three kinds of errors must all be caught:
+    #  1) ordinary TeX errors start with "!";
+    #  2) because we pass -file-line-error, LaTeX Error is written as
     #     "./main.tex:247: LaTeX Error: Environment prop undefined."
-    #     这种行**不以 "!" 开头**，只看 "!" 会把它们整批漏掉（真实踩过：
-    #     论文里 prop/proof 环境根本没定义，却一直报 verdict OK）。
-    #  3) **任何** `路径.tex:行号:` 前缀的行都是错误——`-file-line-error` 只给
-    #     错误加这个前缀；警告走的是 "LaTeX Warning: ... on input line N." 格式。
-    #     真实踩过：`./main.tex:587: Missing $ inserted.`（宏在文本模式下展开出
-    #     `\times 10^{-5}`）不含 "LaTeX Error" 字样，被 (2) 整条漏掉，于是
-    #     pdflatex 返回 1 而脚本仍报 "hard errors: 0 / verdict: OK"。
+    #     Such lines do **not** start with "!", so looking only for "!" would
+    #     miss them entirely (hit this in practice: the prop/proof environments
+    #     were never defined in the paper, yet the verdict kept reporting OK).
+    #  3) **any** line with a `path.tex:line:` prefix is an error -- `-file-line-error`
+    #     adds this prefix only to errors; warnings use the "LaTeX Warning: ...
+    #     on input line N." format. Hit in practice: `./main.tex:587: Missing $
+    #     inserted.` (a macro expanded `\times 10^{-5}` in text mode) contains no
+    #     "LaTeX Error" text, was missed entirely by (2), so pdflatex returned 1
+    #     while the script still reported "hard errors: 0 / verdict: OK".
     hard = []
     for l in last_pass.splitlines():
         s = l.strip()
@@ -152,7 +164,8 @@ def main():
     for l in hard[:15]:
         print("    %s" % l[:170])
 
-    # pdflatex 自己的退出码也要报出来：它非零而 hard==0 说明检测式漏了模式。
+    # pdflatex's own exit code must also be reported: a non-zero code while
+    # hard==0 means the detection pattern missed something.
     bad_rc = [(lb, c) for lb, c in RCS if c != 0 and "pdflatex" in lb]
     print("pdflatex rc    : %s" % (" ".join("%s=%d" % t for t in RCS) or "?"))
 
@@ -168,18 +181,18 @@ def main():
     print("overfull boxes : %d (last pass)" % len(re.findall(r"Overfull \\hbox", last_pass)))
     print("underfull boxes: %d (last pass)" % len(re.findall(r"Underfull \\hbox", last_pass)))
 
-    # 页数与字数（从最后一版 pdf 的 log 里抓）
+    # page count and word count (from the last pdf build's log)
     m = re.search(r"Output written on main\.pdf \((\d+) pages?,.*?(\d+) bytes", final_log)
     if m:
         npages = int(m.group(1))
-        print("total pages    : %d  (含参考文献与附录)" % npages)
+        print("total pages    : %d  (including references and appendix)" % npages)
 
     ok = (not hard) and (not bad_rc) and os.path.exists(pdf) \
         and not undef_ref and not undef_cit and not undef_cs
     print("verdict        : %s" % ("OK" if ok else "FAIL"))
     if not ok:
         if bad_rc:
-            print("    pdflatex 非零退出但未被识别为错误：%s" % bad_rc)
+            print("    pdflatex non-zero exit not recognized as an error: %s" % bad_rc)
         sys.exit(1)
 
 

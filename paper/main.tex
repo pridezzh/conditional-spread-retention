@@ -27,6 +27,20 @@
 \usepackage{algorithm}
 \usepackage{algorithmic}
 
+% The main text must fit the ICLR 2027 nine-page limit, so float separation and
+% caption skips are tightened from the style defaults (20/12/12pt and 10pt).
+\setlength{\textfloatsep}{5pt plus 2pt minus 2pt}
+\setlength{\floatsep}{5pt plus 2pt minus 2pt}
+\setlength{\intextsep}{5pt plus 2pt minus 2pt}
+\setlength{\abovecaptionskip}{3pt}
+\setlength{\belowcaptionskip}{0pt}
+
+% Display-math skips are tightened from the 10pt class defaults for the same reason.
+\setlength{\abovedisplayskip}{4pt plus 2pt minus 2pt}
+\setlength{\belowdisplayskip}{4pt plus 2pt minus 2pt}
+\setlength{\abovedisplayshortskip}{2pt plus 1pt}
+\setlength{\belowdisplayshortskip}{2pt plus 1pt}
+
 % 正文所有实验数字都来自这里；由 code/analysis/make_theory_macros.py 生成。
 % （旧版的 numbers.tex 已不被引用，见 _archive_20260916/。）
 \input{numbers_theory.tex}
@@ -63,19 +77,18 @@ Few-step generative policies can either match iterative samplers or collapse. We
 one narrower question: how much conditional total variance is retained by an
 $L^2$-optimal endpoint regressor? Its ratio $\rho^\ast$ is the squared multivariate
 correlation ratio between source and target, conditional on context---a classical
-explained-variance quantity, not a new dependence measure. This identity gives an exact
-criterion: collapse occurs under \emph{conditional mean independence}; full statistical
-independence is sufficient but not necessary. We construct a one-parameter family of
-couplings with the same observed $(c,x_1)$ marginal for every $\alpha$, while
-$\rho^\ast(\alpha)=\alpha^2$ sweeps $[0,1]$. On this family, any estimator restricted to
-the target-side data has minimax absolute-error risk $1/2$, whereas the paired
-$(x_0,x_1,c)$ samples used by training identify $\rho^\ast$. We also compare pointwise,
-pooled Chamfer, within-condition Chamfer, and balanced assignment objectives in a
-controlled ring-mixture task. These experiments show that matching scope strongly changes
-conditional spread in this task; they do not establish a universal ranking of losses or
-general one-step sample quality. All experiments are CPU-only---synthetic families with
-controlled ground truth plus a real-image MNIST endpoint study---and the paper makes no
-claim about downstream return or robot performance.
+explained-variance quantity, not a new dependence measure. It gives an exact criterion:
+collapse occurs under \emph{conditional mean independence}; full statistical independence
+is sufficient but not necessary. We construct a one-parameter family of couplings with the
+same observed $(c,x_1)$ marginal for every $\alpha$, while $\rho^\ast(\alpha)=\alpha^2$
+sweeps $[0,1]$. On it, any estimator restricted to target-side data has minimax
+absolute-error risk $1/2$, whereas the paired $(x_0,x_1,c)$ samples used by training
+identify $\rho^\ast$. We also compare pointwise, pooled Chamfer, within-condition Chamfer,
+and balanced assignment objectives in a controlled ring-mixture task: matching scope
+strongly changes conditional spread here, but establishes no universal ranking of losses
+or general sample quality. All experiments are CPU-only---synthetic families plus a
+real-image MNIST endpoint study---with no claim about downstream return or robot
+performance.
 \end{abstract}
 
 %======================================================================
@@ -100,10 +113,11 @@ success as a property of the condition--target \emph{structure}
 \citep{letitbesimple2026}, and states as an open problem the task of \emph{quantifying}
 when it holds.
 
-This paper narrows that open problem. A single variance ratio cannot decide overall
-sample quality, but it can characterize mean collapse for endpoint regression. That
-quantity is not identified by the target marginal $p(c,x_1)$ without the source--target
-pairing used in training.
+This paper narrows that open problem. Prior work proves collapse for an independent
+pairing; we show the question is not decidable from the target marginal at all. A single
+variance ratio cannot decide overall sample quality, but it can characterize mean collapse
+for endpoint regression, and that quantity is not identified by $p(c,x_1)$ without the
+source--target pairing used in training.
 
 \paragraph{What we mean by conditional-spread retention.}
 For a one-step map $f$ we define the realised conditional-spread ratio
@@ -133,9 +147,10 @@ which $\rho^\ast(\alpha)=\alpha^2$ sweeps $[0,1]$ (Thm.~\ref{thm:alpha}); hence
 $\inf_{\mathcal A}\sup_\alpha\Eop|\mathcal A-\rho^\ast(\alpha)|=\MinimaxConst$ over
 \emph{all} data-only statistics, attained by the constant $1/2$
 (Thm.~\ref{thm:minimax})---more data does not help. The paired samples used by
-training do identify $\rho^\ast$: under an ideal local-neighbour approximation the
-finite-$k$ curve is $\alpha^2+(1-\alpha^2)/k$, and the measured curve tracks it to
-MAD \ImpPredMad{} (Sec.~\ref{sec:estimator}).
+training identify $\rho^\ast$ in the population sense---it is a functional of the paired
+law---and under an ideal local-neighbour approximation the finite-$k$ curve is
+$\alpha^2+(1-\alpha^2)/k$, which the measured curve tracks to MAD \ImpPredMad{}
+(Sec.~\ref{sec:estimator}).
 \item[\textbf{C3}] \textbf{A controlled loss comparison.} Population objectives explain
 why pointwise $L^2$, unbalanced support matching, and balanced transport have different
 sets of optima. In our ring task, pooling candidates across conditions flattens
@@ -153,15 +168,11 @@ does not rescue one-step regression on real images; making the conditional mean
 depend on $x_0$ does.
 \end{enumerate}
 
-\paragraph{Scope and honesty statement.} Every experiment is CPU-only: synthetic
-families with closed-form or exactly controlled ground truth, plus a real-image
-endpoint-regression study (MNIST) in which the coupling is constructed by us and each
-claim is checked against pre-registered criteria. An earlier iteration trained on
-\emph{conditional} MNIST; those runs are not reported (the field was under-fitted at
-our CPU budget) and nothing here depends on them. Claims about what \emph{cannot} be
-predicted are exact theorems; claims about what \emph{does} happen under a given
-training target are controlled measurements with pre-registered criteria.
-Appendix~\ref{app:scope} gives the full statement.
+\paragraph{Scope and honesty statement.} Every experiment is CPU-only, and every claim is
+either an exact theorem about what \emph{cannot} be predicted or a controlled measurement
+of what \emph{does} happen under a given training target, checked against pre-registered
+criteria. Appendix~\ref{app:scope} gives the full statement, including an earlier
+under-fitted \emph{conditional}-MNIST iteration on which nothing here depends.
 
 %======================================================================
 \section{Setup and the classical dependence quantity}
@@ -182,8 +193,9 @@ consistency distillation produce.
 
 \begin{theorem}[Optimal endpoint map and mean-dependence criterion]
 \label{thm:optimal}
-Assume $0<\Eop_c\tr\Var(x_1\mid c)<\infty$ and fix a coupling $\pi$. The minimiser of the pointwise $L^2$ risk
-$\Eop_\pi\|f(x_0,c)-x_1\|^2$ over all measurable $f$ is
+Assume $\Eop\|x_1\|^2<\infty$ and $0<\Eop_c\tr\Var(x_1\mid c)<\infty$, and fix a coupling
+$\pi$. The minimiser of the pointwise $L^2$ risk $\Eop_\pi\|f(x_0,c)-x_1\|^2$ over all $f$
+with $\Eop\|f(x_0,c)\|^2<\infty$ is
 $f^\ast(x_0,c)=\Eop_\pi[x_1\mid x_0,c]$, and
 \[
   \rho(f^\ast)=
@@ -230,14 +242,8 @@ numerically on the exact velocity field of a Gaussian-mixture conditional, where
 $v^\ast(x,0,c)=\Eop[x_1\mid c]-x$ can be integrated in closed form: the unit Euler
 endpoint matches $m(c)$ to $\MSEndpointErr$ and realises conditional variance
 $\MSVarOne$, while the $\ImpK$-mode ring is covered $0$ times at $N=1$ and
-\MSCovTwo{}/\ImpK{} from $N=2$ on. The multi-step ratio rises monotonically,
-\[
-\begin{array}{lccccccccc}
-N & 1 & 2 & 4 & 8 & 16 & 32 & 64 & 128 & 256\\[2pt]
-\rho_N & \MSRhoOne & \MSRhoTwo & \MSRhoFour & \MSRhoEight & \MSRhoSixteen &
-\MSRhoThirtyTwo & \MSRhoSixtyFour & \MSRhoOneTwentyEight & \MSRhoTwoFiftySix
-\end{array}
-\]
+\MSCovTwo{}/\ImpK{} from $N=2$ on. The multi-step ratio rises monotonically in the step count, from $\MSRhoOne$ at $N=1$
+to $\MSRhoTwoFiftySix$ at $N=256$ (all ten values in Appendix~\ref{app:proofs}).
 Under a conditional (multi-condition) version of the same
 construction, changing \emph{only} the coupling moves one-step $\rho$ from
 \CondRhoInd{} to \CondRhoDet{} at $k=\CondKnnK$---a factor of \CondContrast---while
@@ -255,8 +261,8 @@ Thm.~\ref{thm:optimal} gives
   \label{eq:channels}
 \end{equation}
 Independent pairing is one sufficient route to the right-hand side; deterministic
-transport with non-degenerate targets attains the other endpoint. Changing the loss can
-also avoid the pointwise conditional mean, but no universal converse is claimed.
+transport attains the other endpoint. Changing the loss can also avoid the pointwise
+conditional mean, but no universal converse is claimed.
 
 %======================================================================
 \section{The data cannot decide}
@@ -271,9 +277,9 @@ exactly how void it is.
 \subsection{A family with fixed data and sweeping \texorpdfstring{$\rho$}{rho}}
 \label{sec:alphafam}
 
-Fix $p(\cdot\mid c)$ and let $T(\cdot,c)$ be any transport map pushing
-$\Ncal(0,I_d)$ to $p(\cdot\mid c)$---concretely, the flow map of the exact velocity
-field, i.e.\ what reflow would produce. For $\alpha\in[0,1]$ define the
+Fix $p(\cdot\mid c)$, assumed atomless so that a transport map exists, and let
+$T(\cdot,c)$ push $\Ncal(0,I_d)$ to $p(\cdot\mid c)$---concretely, the flow map of the
+exact velocity field, i.e.\ what reflow would produce. For $\alpha\in[0,1]$ define the
 \emph{$\alpha$-interpolated coupling}
 \begin{equation}
   x_1 \;=\; B\cdot T(x_0,c) + (1-B)\cdot X,\qquad
@@ -283,7 +289,7 @@ field, i.e.\ what reflow would produce. For $\alpha\in[0,1]$ define the
 
 \begin{theorem}[Fixed data, sweeping $\rho$]
 \label{thm:alpha}
-For the coupling \eqref{eq:alpha}: \emph{(i)} both branches have marginal
+For the coupling \eqref{eq:alpha}, with $\Eop\|x_1\|^2<\infty$: \emph{(i)} both branches have marginal
 $p(\cdot\mid c)$, so the law of $(c,x_1)$ does not depend on $\alpha$; \emph{(ii)}
 $f^\ast_\alpha(x_0,c)=\alpha T(x_0,c)+(1-\alpha)m(c)$; and \emph{(iii)}
 $\rho^\ast(\alpha)=\alpha^2$.
@@ -375,7 +381,8 @@ $\{x_0^{(i)},x_1^{(i)},c^{(i)}\}_{i=1}^M$ with $G_i=f(x_0^{(i)},c^{(i)})$.
 
 \begin{theorem}[Population limits of three objectives]
 \label{thm:ladder}
-Assume finite second moments and the standard empirical-measure convergence conditions.
+Assume finite second moments, that each $p(\cdot\mid c)$ is a pushforward of $\Ncal(0,I_d)$
+by a measurable map, and the standard empirical-measure convergence conditions.
 Under the independent coupling, as $M\to\infty$:
 \textbf{(L1)} the pointwise loss $\frac1M\sum_i\|G_i-x_1^{(i)}\|^2$ has unique
 population minimiser $q_c=\delta_{m(c)}$, giving $\rho=0$;
@@ -386,7 +393,7 @@ population minimiser $q_c=\delta_{m(c)}$, giving $\rho=0$;
 \]
 converges to $\Eop_{y\sim p_c}[\min_{x\in\supp q_c}\|y-x\|^2]+\Eop_{x\sim q_c}[\min_{y\in\supp p_c}\|x-y\|^2]$,
 which vanishes when the closed supports agree and is otherwise silent about weights
-(more precisely, it identifies supports only up to measure-zero/closure qualifications);
+(supports identified only up to measure-zero/closure qualifications);
 \textbf{(L3)} the \emph{balanced} collection loss, $\min_{\sigma}\frac1M\sum_i\|G_i-x_1^{(\sigma(i))}\|^2$
 over bijections $\sigma$ within each condition, converges to $W_2^2(p_c,q_c)$, whose
 unique minimiser is $q_c=p_c$ and $\rho=1$.
@@ -436,12 +443,12 @@ pass (verdict \ImpVerdict).
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.84\textwidth]{../figures/fig_impossibility.pdf}
-\caption{\textbf{Target marginal versus training pairing.} (a) $\rho$ against $\alpha$ on the family of
-Thm.~\ref{thm:alpha}: measured (circles) versus the analytic $\alpha^2$ (solid) and its
-finite-$k$ correction (dashed). On the right axis, two data-side statistics over the
-same sweep: they are flat while $\rho$ traverses $[0,1]$. (b) Controlled method
-implementations with cross-seed SD; it is a finite comparison, not a universal dichotomy.}
+\includegraphics[width=0.74\textwidth]{../figures/fig_impossibility.pdf}
+\caption{\textbf{Target marginal versus training pairing.} (a) $\rho$ against $\alpha$ on the
+family of Thm.~\ref{thm:alpha}: measured (circles) versus the analytic $\alpha^2$ (solid)
+and its finite-$k$ correction (dashed); on the right axis two data-side statistics, flat
+while $\rho$ traverses $[0,1]$. (b) Controlled method implementations with cross-seed SD:
+a finite comparison, not a universal dichotomy.}
 \label{fig:imposs}
 \end{figure*}
 
@@ -460,8 +467,8 @@ a fixed relative threshold tests the noise rather than the $\alpha$ effect: run 
 na\"ive $k$-means initialisation, the $K=8$ ratio varies from $15$ to $36$ \emph{across
 seeds at the same $\alpha$}. We therefore test with a one-way ANOVA over
 $\alpha$ with seeds as replicates (and with restarted $k$-means++). At level
-$\MinimaxPAlpha$, no statistic shows a detectable $\alpha$ effect; the largest relative
-deviation from $\alpha=0$ is \MinimaxDevMax{}. By contrast the paired estimator's mean
+$\MinimaxPAlpha$ with five seeds per level, no statistic shows a detectable $\alpha$
+effect; the largest relative deviation from $\alpha=0$ is \MinimaxDevMax{}. By contrast the paired estimator's mean
 absolute deviation from $\alpha^2$ is \MinimaxPairedMad{}---\MinimaxRiskRatio$\times$
 smaller than the $\MinimaxConst$ that Theorem~\ref{thm:minimax} imposes on \emph{any}
 data-only predictor.
@@ -472,10 +479,9 @@ $[0,1]$-scaled statistic below \LadderWorstAbsDiff{}---that is, at most $0.3\%$ 
 $1.0$ that a useful predictor must resolve---while the paired estimator, with the same
 budget of samples, tracks $\alpha^2$. If a data-side statistic carried a real
 $\alpha$-signal, its difference would converge to a nonzero constant as $n$ grows; it
-does not. (Two of the seven statistics, the Calinski--Harabasz count and the $k$-means
-variance ratio, are ratio-scaled---their typical values are $8$ and $35$---so an
-absolute threshold is not meaningful for them; their $\alpha$-independence rests on the
-scale-free ANOVA above.)
+does not. (Two of the seven, the Calinski--Harabasz count and the $k$-means variance ratio, are
+ratio-scaled, so absolute thresholds do not apply; their $\alpha$-independence rests on
+the scale-free ANOVA above.)
 
 \subsection{What does decide: the method map}
 \label{sec:exmap}
@@ -568,10 +574,9 @@ not from the missing bijection. L2b and
 L3 both track the diagonal, separated only by what the metric rewards: L3 has the lowest
 conditional sliced $W_2$ (\LLBalCsw{} against \LLChamferCsw, a factor of \LLRatioCsw) while
 L2b is nominally closer on the scale ratio ($|\rho_j-1|$ \LLChamferAbsErr{} against
-\LLBalAbsErr). A single aggregate number cannot substitute for the conditional statistic:
-it reports \LLChamferPooledRho{} for the pooled variant whose scale error is
-\LLChamferPooledAbsErr, and \LLChamferRho{} for the within-condition variant whose scale
-error is \LLChamferAbsErr.
+\LLBalAbsErr). A single aggregate number cannot substitute for the conditional statistic: it reports
+\LLChamferPooledRho{} for the pooled variant (scale error \LLChamferPooledAbsErr) against
+\LLChamferRho{} for the within-condition variant (scale error \LLChamferAbsErr).
 
 \paragraph{A prediction that failed.} We expected that dropping balancedness at fixed
 scope (L2b vs.\ L3) would flatten the conditional spread; it did not, and the ladder's
@@ -582,16 +587,15 @@ not predict finite-training dynamics or pooled matching.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.80\textwidth]{../figures/fig_loss_ladder.pdf}
+\includegraphics[width=0.70\textwidth]{../figures/fig_loss_ladder.pdf}
 \caption{\textbf{Controlled loss comparison.} Independent coupling held fixed; only the
 loss form changes. Error bars are cross-seed SD. (a) Generated versus true per-condition
-total variance over four conditions; the diagonal matches this variance statistic but
-does not certify the full conditional law.
+total variance over four conditions; the diagonal certifies this variance statistic only.
 L1 (pointwise $L^2$) sits at zero; L2a (pooled Chamfer, whole-batch $\arg\min$) is nearly
-\emph{horizontal}---all eight evaluated modes are covered but spread is flattened; L2b (matched \emph{within} each
-condition) returns to the diagonal; L3 (balanced, within condition) is closest in sliced
-$W_2$. So the flattening comes from the scope of the matching, not from the missing
-bijection. (b) Conditional sliced $W_2$ and mean per-conditional spread error.}
+\emph{horizontal}---all eight evaluated modes are covered but spread is flattened; L2b
+(matched \emph{within} each condition) returns to the diagonal; L3 (balanced, within
+condition) is closest in sliced $W_2$. Flattening tracks the scope of the matching, not
+the missing bijection. (b) Conditional sliced $W_2$ and mean spread error.}
 \label{fig:ladder}
 \end{figure*}
 
@@ -605,59 +609,56 @@ objective literally pointwise $L^2$ (Appendix~\ref{app:corrections}(iii)).
 \label{sec:estimator}
 
 $\rho^\ast$ is the variance of a conditional mean, so the natural estimator is $k$NN
-regression of $x_1$ on $x_0$ within each condition. This estimator has an analytic bias
-in the ideal zero-neighbourhood-radius approximation that we use as a check: under an independent coupling, the
+regression of $x_1$ on $x_0$ within each condition. Its bias under the ideal
+zero-neighbourhood approximation, which we use as a check: under an independent coupling, the
 $k$-neighbour average of i.i.d.\ targets has variance $\Var(x_1\mid c)/k$, so
 $\hat\rho_{\mathrm{kNN}}(k)\approx\rho^\ast+(1-\rho^\ast)/k$, which at $\rho^\ast=0$
 is the $1/k$ law. Measured $k\cdot\hat\rho$ under the independent coupling is
 \CondKTimesOne{},\,\CondKTimesTwo{},\,\CondKTimesFive{},\,\CondKTimesTen{},\,\CondKTimesTwenty{}
-at $k=1,2,5,10,20$---the law holds before the estimator is used for anything.
+at $k=1,2,5,10,20$: the law is accurate for $k\le10$ and degrades to \CondKTimesTwenty{}
+by $k=20$, where the zero-neighbourhood approximation weakens.
 
 \subsection{Real-data confirmation: endpoint regression on MNIST}
 \label{sec:mnist}
 
 Everything so far is synthetic. We repeat the endpoint experiment on MNIST
-$16{\times}16$ images \citep{lecun1998mnist}: $x_0\sim\Ncal(0,I_{256})$, four
-couplings that share the source and differ only in how a target $x_1$ is paired
-with it---(i)~\emph{independent} ($x_1=x\tilde{}$, an image); (ii)~\emph{dependent
-but mean-independent}, $x_1=\mu+(1+0.8\tanh x_{0,1})\,(x\tilde{}-\mu)$ with $\mu$
-the data mean, so $\Eop[x_1\mid x_0]=\mu$ exactly while the conditional variance
-varies with $x_0$ by a factor of up to $(1.8)^2$; (iii)~\emph{mini-batch OT}; and
-(iv)~\emph{sorted quantile pairing}: within each batch, sources are sorted by
-$x_{0,1}$, images by their projection on the data's first principal axis, and
-ranks matched---$O(m\log m)$, no assignment solver---making $\Eop[x_1\mid x_0]$
-a deterministic function of $x_{0,1}$; at this scale it costs \MnistDSeconds{} s per
-seed of training against \MnistCSeconds{} s for per-batch OT. We
-train the same small MLP with $L^2$ per coupling, \MnistNSeeds{} seeds; (i)/(ii) stop at
-the $\mu$-baseline (the population optimum) so memorising finite pairs cannot
-fake the result.
-The distance correlation of (ii) is \MnistBDcor{} against \MnistADcor{} for (i):
+$16{\times}16$ images \citep{lecun1998mnist}, with $x_0\sim\Ncal(0,I_{256})$ and four
+couplings that share the source and differ only in how a target $x_1$ is paired with
+it---(i)~\emph{independent} ($x_1=x\tilde{}$, an image); (ii)~\emph{dependent but
+mean-independent}, $x_1=\mu+(1+0.8\tanh x_{0,1})\,(x\tilde{}-\mu)$ with $\mu$ the data
+mean, so $\Eop[x_1\mid x_0]=\mu$ exactly while the conditional variance varies with $x_0$
+by up to $(1.8)^2$; (iii)~\emph{mini-batch OT}; and (iv)~\emph{sorted quantile pairing}:
+within each batch, sources are sorted by $x_{0,1}$, images by their projection on the
+data's first principal axis, and ranks matched---$O(m\log m)$, no assignment solver---so
+$\Eop[x_1\mid x_0]$ is a deterministic function of $x_{0,1}$, at \MnistDSeconds{} s per
+seed against \MnistCSeconds{} s for per-batch OT. We train the same small MLP with $L^2$
+per coupling, \MnistNSeeds{} seeds; (i)/(ii) stop at the $\mu$-baseline (the population
+optimum) so memorising finite pairs cannot fake the result.
+The distance correlation \citep{szekely2007distancecorr} of (ii) is \MnistBDcor{} against \MnistADcor{} for (i):
 the coupling is measurably dependent, \emph{and it collapses anyway}. The trained
 map's realised spread is $\rho=\MnistARhoTr{}$ for (i) and $\MnistBRhoTr{}$ for
 (ii)---both an order of magnitude below (iii)'s $\MnistCRhoTr{}$---and the mean
 output of (i)/(ii) is the grey mean image (relative error \MnistAMuErr{} and
 \MnistBMuErr{}) with the worst sliced-$W_2$ fidelity (\MnistACsw{}/\MnistBCsw{}
-versus (iii)'s \MnistCCsw{}). On real images, as in the toy ring, dependence does
-not rescue one-step endpoint regression; mean dependence is what the trained map
-responds to.
+versus (iii)'s \MnistCCsw{}).
 Coupling (iv) is the constructive counterpart: the cheapest pairing that forces
-the conditional mean to depend on $x_0$. It behaves as prescribed---the
-constructed dependence is detected (distance correlation \MnistDDcor{} against
-\MnistADcor{} for (i)), the trained map does not collapse
-($\rho=\MnistDRhoTr{}$, an order of magnitude above the (i)/(ii) floor), and
-fidelity improves (sliced-$W_2$ \MnistDCsw{} versus \MnistACsw{}/\MnistBCsw{})
-yet stays well short of full OT (\MnistCCsw{}): matching quantiles of a \emph{single}
-statistic recovers only the variance fraction the first principal axis explains.
-The four couplings form a ladder of mean dependence---(i)/(ii) none, (iv) one
-statistic, (iii) complete---and the trained map's spread climbs it in lockstep:
-the criterion not only diagnoses collapse but prescribes the fix and its ceiling.
-Across-seed dispersion is small: the largest standard deviation of any mean reported
-above is \MnistMaxStd{} (\MnistMaxStdOf{}), over \MnistNSeeds{} seeds.
-One limitation: the data-side $k$NN estimator of $\rho^\ast$ is
-uninformative at this dimension ($d{=}256$, $n{\approx}10^3$; $\approx 0$ for
-\emph{all four} couplings, a curse-of-dimensionality failure), so the criterion is
-validated through trained maps; the estimator's operating regime remains that of
-Sec.~\ref{sec:estimator}.
+the conditional mean to depend on $x_0$. The constructed dependence is detected
+(distance correlation \MnistDDcor{} against \MnistADcor{} for (i)), the trained map
+does not collapse ($\rho=\MnistDRhoTr{}$, an order of magnitude above the (i)/(ii)
+floor), and fidelity improves (sliced-$W_2$ \MnistDCsw{} versus
+\MnistACsw{}/\MnistBCsw{}) yet stays well short of full OT (\MnistCCsw{}): matching
+quantiles of a \emph{single} statistic recovers only the variance fraction the first
+principal axis explains. The four couplings thus form a ladder of mean
+dependence---(i)/(ii) no mean dependence, (iv) one statistic, (iii) complete---and the
+trained
+map's spread climbs it in lockstep: on these four MNIST couplings the criterion
+separates collapse from recovery and points to the dependent pairing as the remedy.
+Across-seed dispersion is small: the largest standard deviation among the diagnostic
+means reported above is \MnistMaxStd{} (\MnistMaxStdOf{}), over \MnistNSeeds{} seeds.
+One limitation: the data-side $k$NN estimator is uninformative at this dimension
+($d{=}256$, $n{\approx}10^3$; $\approx 0$ for \emph{all four} couplings, a
+curse-of-dimensionality failure), so the criterion is validated through trained maps,
+with the estimator's operating regime as in Sec.~\ref{sec:estimator}.
 
 %======================================================================
 \section{A negative result about our own earlier proposal}
@@ -666,103 +667,94 @@ Sec.~\ref{sec:estimator}.
 An earlier version of this line of work advanced $\cL$, a null-calibrated conditional
 mode-separation score, as a \emph{modality detector}. We report the experiment that
 kills that claim. On a fixed battery of ten population distributions the Gaussian
-deficit (the quantity behind $\cL$) takes values
-$\LamGauss$ (Gaussian), $\LamBall$ (uniform ball), $\LamLaplace$ (Laplace),
+deficit (the quantity behind $\cL$) ranges from $\LamGauss$ (Gaussian) to
+$\LamTwoModes$ (two modes), with $\LamBall$ (uniform ball), $\LamLaplace$ (Laplace),
 $\LamHetero$ (heteroscedastic), $\LamRingEight$ (eight-mode ring), $\LamStudentT$
-(Student-$t_3$), $\LamLogNorm$ (log-normal), $\LamExpSkew$ (exponential),
-$\LamBanana$ (banana), $\LamTwoModes$ (two modes). It has the correct analytic ceiling
-of $1-2\sqrt{2/\pi}+1$, which the finite-sample estimator already matches to
-$\LamCeilingEstErr$ at $n=\LamCeilingNMin$, and it is stable across sample sizes (largest disagreement between
-$n=2000$ and $n=2\times10^{5}$ is \LamConsistencyMaxDiff). But it \emph{sorts a
+(Student-$t_3$), $\LamLogNorm$ (log-normal), $\LamExpSkew$ (exponential) and
+$\LamBanana$ (banana) in between. It has the correct analytic ceiling of
+$1-2\sqrt{2/\pi}+1$, matched by the finite-sample estimator to $\LamCeilingEstErr$ at
+$n=\LamCeilingNMin$, and is stable across sample sizes (largest disagreement between
+$n=2000$ and $n=2\times10^{5}$: \LamConsistencyMaxDiff). But it \emph{sorts a
 single-mode banana above an eight-mode ring}: $\LamBanana>\LamRingEight$. A statistic
 that ranks one mode above eight cannot be called a modality detector, whatever its
 construct validity on the remaining nine distributions (rank correlation
-$\LamRankCorrOT$ against a brute-force optimal-transport computation, and
+$\LamRankCorrOT$ against a brute-force optimal-transport computation,
 $\LamRankCorrConstruct$ against a constructed error measure).
 
-We keep $\cL$ as a descriptive index of departure from Gaussianity and drop the
-modality claim. This is not incidental to the paper: it is the same lesson as
-Sec.~\ref{sec:imposs} in miniature. Any scalar summary of a conditional law---ours
-included---is a projection, and the projection that separates the cases you had in
-mind is not the projection that separates the cases that occur.
+We keep $\cL$ as a descriptive index of departure from Gaussianity and drop the modality
+claim. This is not incidental: it is the same lesson as Sec.~\ref{sec:imposs} in
+miniature---any scalar summary of a conditional law, ours included, is a projection, and
+the projection that separates the cases you had in mind need not separate the cases that
+occur.
 
 %======================================================================
 \section{Related work}
 \label{sec:related}
 
 \paragraph{Correlation-ratio dependence.} The scalar $\rho^\ast$ is the multivariate
-correlation ratio: the fraction of target variance explained by the conditional mean
-\citep{renyi1959,sampson1984}. We use this classical quantity to state the exact
-population criterion for endpoint mean collapse; we do not claim a new dependence
-measure. In particular, dependence alone is insufficient: a dependent coupling can be
-conditionally mean-independent.
+correlation ratio---the fraction of target variance explained by the conditional mean
+\citep{renyi1959,sampson1984}. We use this classical quantity to state the exact population
+criterion for endpoint mean collapse and claim no new measure; dependence alone is
+insufficient, since a dependent coupling can be conditionally mean-independent.
 
 \paragraph{Few-step generative models.} Consistency models \citep{song2023consistency},
 consistency flow matching \citep{yang2024consistencyfm}, shortcut models
 \citep{frans2024shortcut}, mean flows \citep{geng2025meanflows}, progressive
 \citep{salimans2022progressivedistill} and distribution-matching \citep{yin2024dmd}
-distillation, and InstaFlow \citep{liu2024instaflow} all target few-step sampling. Our
-contribution is not another sampler but a statement about which design choice governs the
-outcome, and a proof that the data cannot substitute for that choice.
+distillation, and InstaFlow \citep{liu2024instaflow} target few-step sampling. Our
+contribution is not a sampler but a statement about which design choice governs the
+outcome, plus a proof that data cannot substitute for it.
 
 \paragraph{Coupling and straightness.} Rectified flow \citep{liu2023rectifiedflow} shows
 straightening the coupling makes one step viable; stable diffusion~3 \citep{esser2024sd3}
 shows the training-time distribution matters as much as the sampler; non-Gaussian sources
-reduce path crossing in physical simulation \citep{onestepfm2026}. The coupling literature
-\citep{tong2024cfm,liu2023rectifiedflow,pooladian2023multisample} already knows the coupling
-matters, and we do not claim otherwise---Thm.~\ref{thm:optimal} is the $L^2$ projection
-and total-variance identity. ODE-free Neural Flow Matching proves mean collapse for
-independent endpoint regression and proposes optimal-transport pairing
-\citep{shou2026nfm}. Our narrower correction is that non-independence is not an
-if-and-only-if condition: conditional mean dependence is. Thm.~\ref{thm:minimax} then
-formalises why the target marginal alone cannot reveal that training-time property.
+reduce path crossing in physical simulation \citep{onestepfm2026}. This literature
+\citep{tong2024cfm,liu2023rectifiedflow,pooladian2023multisample} already knows the
+coupling matters---Thm.~\ref{thm:optimal} is the $L^2$ projection and total-variance
+identity---and ODE-free Neural Flow Matching proves mean collapse for independent endpoint
+regression and proposes optimal-transport pairing \citep{shou2026nfm}. Our narrower
+correction: non-independence is not an if-and-only-if condition, conditional mean
+dependence is, and Thm.~\ref{thm:minimax} formalises why the target marginal alone cannot
+reveal it.
 
 \paragraph{One-step policies in RL.} \citep{nguyen2026bfq,li2026ofp,mvp2026,lps2026,
-flame2026,fan2026} report strong one-step policies, but \citep{li2026ofp,letitbesimple2026}
-find the advantage disappears when the observation is weakened or the action chunk
-lengthened. \citep{letitbesimple2026} calls this a condition--target \emph{structure}
-property and formalises it as an irreducible velocity loss. Our synthetic analysis isolates
-a complementary variable---the source--target pairing---without claiming downstream
-control improvements.
+flame2026,fan2026} report strong one-step policies, but the advantage disappears when the
+observation is weakened or the action chunk lengthened
+\citep{li2026ofp,letitbesimple2026}; \citep{letitbesimple2026} calls this a
+condition--target \emph{structure} property formalised as an irreducible velocity loss. Our
+synthetic analysis isolates a complementary variable---the source--target pairing---without
+claiming downstream control improvements.
 
-\paragraph{Collection-level losses.} Implicit maximum likelihood estimation
+\paragraph{Collection-level losses and diagnostics.} Implicit maximum likelihood estimation
 \citep{li2018imle} and Chamfer-style objectives are standard tools for avoiding
-mode-averaging, typically presented as interchangeable. Thm.~\ref{thm:ladder} separates
-them by the \emph{scope} of the matching: only a balanced, within-condition assignment is
-pinned to the full $W_2$ objective, and Sec.~\ref{sec:exladder} shows the scope---not the
-balance---is what flattens the conditional spread.
-
-\paragraph{Diagnostics.} \citep{li2026nofreelunch} gives a pre-training,
-conditional-spread-based few-step diagnostic ($q^\ast/\sigma^\ast$) for conformal prediction;
-$\sqrt{\cD}$ is our version of that $x$-axis with a different normalisation, and we say so.
-We prove the diagnostic cannot be extended to the general one-step retention question.
+mode-averaging, typically presented as interchangeable; Thm.~\ref{thm:ladder} separates
+them by the \emph{scope} of the matching, and Sec.~\ref{sec:exladder} shows the scope---not
+the balance---flattens the conditional spread. \citep{li2026nofreelunch} gives a
+pre-training, conditional-spread-based few-step diagnostic ($q^\ast/\sigma^\ast$) for
+conformal prediction; $\sqrt{\cD}$ is our version of that axis with a different
+normalisation, and we prove the diagnostic cannot be extended to the general one-step
+retention question.
 
 %======================================================================
-\section{Conclusion, limitations, and what we would want falsified}
+\section{Conclusion and limitations}
 \label{sec:conclusion}
 
 For pointwise $L^2$ endpoint regression, one-step mean collapse is governed exactly by
-conditional mean dependence, rather than dependence in general. In an explicit coupling
-family, the target marginal is identical while $\rho^\ast$ spans $[0,1]$, giving minimax
-absolute-error risk $1/2$ to any target-marginal-only estimator. Paired training samples
-restore the missing information. Our collection-loss experiments further show that the
-scope of matching matters on the controlled ring task, but they do not establish a
-universal method ranking.
+conditional mean dependence, not by dependence in general. In an explicit coupling family
+the target marginal is identical while $\rho^\ast$ spans $[0,1]$, giving minimax
+absolute-error risk $1/2$ to any target-marginal-only estimator; paired training samples
+restore the missing information. Our collection-loss experiments show that the scope of matching matters on the controlled ring task, without
+establishing a universal ranking.
 
 \paragraph{Limitations.} (1) The impossibility is proved for an explicit family---not
 contrived ($\alpha=0,1$ are the couplings in use) but not literally a practitioner's
-target---and bounds the worst case. (2) Measurements are CPU-scale controlled
-\emph{synthetic} families; we have not validated on D4RL \citep{fu2020d4rl}, OGBench
+target---and bounds the worst case. (2) Measurements are CPU-scale \emph{synthetic}
+families; we have not validated on D4RL \citep{fu2020d4rl}, OGBench
 \citep{park2025ogbench}, LIBERO \citep{liu2023libero}, or a VLA. (3) Balanced assignment
-costs a Hungarian solve per batch per condition; its scaling is not studied. (4) $\rho$
-measures conditional spread, not task reward.
+costs a Hungarian solve per batch per condition, with unstudied scaling. (4) $\rho$
+measures conditional spread, not task reward; Appendix~\ref{app:downstream} pre-registers
+the tests that would refute the criterion.
 
-\paragraph{What would test the scope.} The next useful tests are downstream-task
-validation on the pre-registered design of Appendix~\ref{app:downstream}, and
-data-side estimators that survive the high-dimensional regime where the current
-$k$NN estimator fails. Failure of the paired estimator to track independently computed population
-$\rho^\ast$, or failure of the mean-independence criterion under the theorem's finite-moment
-and population-optimum assumptions, would directly challenge the central claims.
 
 \section*{AI use statement}
 Generative AI systems were used to propose and refine the hypothesis, locate and summarise
@@ -775,8 +767,12 @@ audit; the remaining result-provenance limitation is disclosed below and in the 
 Appendices~\ref{app:runtime} and~\ref{app:estimators} give the data, compute and execution
 protocol. The supplement contains the source code, per-run result files, table/figure
 generators, and regression tests for the failure modes in
-Appendix~\ref{app:corrections}. No number is hand-copied: every one is a macro generated
-from the released JSON. Every per-seed result file carries a schema version and a
+Appendix~\ref{app:corrections}. No reported result is hand-copied: every number in a
+table, a figure or a quantitative claim is a macro generated from the released JSON, and
+the per-seed files behind it are released. Numerals that appear only in this prose are
+analytic constants, a priori design choices, or order-of-magnitude diagnostics---the
+$512$-step solver, the ring radii, the across-seed spread of the $k$-means ratio---never a
+headline quantity. Every per-seed result file carries a schema version and a
 SHA-256 fingerprint of the frozen protocol files; merging new seeds requires an
 exact fingerprint match, so all reported seeds come from one code revision.
 
@@ -793,8 +789,9 @@ dataset. Where our own earlier proposal failed we say so (Sec.~\ref{sec:negative
 \label{app:proofs}
 
 \subsection{Theorem~\ref{thm:optimal}}
-The minimiser of $\Eop\|f(x_0,c)-x_1\|^2$ over measurable $f$ is the conditional
-expectation, by the $L^2$ projection theorem applied conditionally on $(x_0,c)$. For
+Since $\Eop\|x_1\|^2<\infty$, the minimiser of $\Eop\|f(x_0,c)-x_1\|^2$ over measurable
+$f$ with finite second moment is the conditional expectation, by the $L^2$ projection
+theorem applied conditionally on $(x_0,c)$. For
 the range, condition on $c$ and apply the law of total variance to the scalar
 components:
 \[
@@ -831,6 +828,31 @@ $W_2^2(\hat q_c,\hat p_c)\to W_2^2(q_c,p_c)$ under the usual moment conditions. 
 unique minimiser over probability measures is $q_c=p_c$; the minimiser over
 \emph{pushforwards of $\Ncal(0,I_d)$ by a measurable map} is any $f$ with
 $f(\cdot,c)_\#\Ncal(0,I_d)=p(\cdot\mid c)$, and every such $f$ has $\rho=1$.
+
+\subsection{Theorem~\ref{thm:ladder}, L2 limit}
+Write $d_{q_c}(y)=\min_{x\in\supp q_c}\|y-x\|$ and $d_{p_c}(x)=\min_{y\in\supp p_c}\|x-y\|$,
+and assume the supports are compact so that the empirical measures converge weakly, as in
+the L3 case. For fixed $y$ we have $\min_j\|y-G_j\|\to d_{q_c}(y)$ almost surely: the lower
+bound $\min_j\|y-G_j\|\ge d_{q_c}(y)$ holds for every $M$, and for every $\varepsilon>0$ an
+$\varepsilon$-net of $\supp q_c$ is almost surely eventually occupied, whence
+$\min_j\|y-G_j\|\le d_{q_c}(y)+\varepsilon$ for all large $M$. Both $y$ and $G_j$ range
+over compact sets, so the squared integrand is bounded; dominated convergence then gives
+the limit $\Eop_{y\sim p_c}[d_{q_c}(y)^2]$ of the first term, and the second is symmetric.
+The population functional is therefore a sum of two non-negative terms, vanishing exactly
+when each closed support is contained in the other's. It carries no term penalising the
+mass a realisation assigns within a non-empty region, so it is minimised by every $q_c$ with
+$\supp q_c=\supp p_c$ and is otherwise silent about weights---the L2/L3 separation.
+
+\subsection{Multi-step ratio values of Sec.~\ref{sec:setup}}
+For the Gaussian-mixture construction of Sec.~\ref{sec:setup} the endpoint ratio
+$\rho_N$ at step counts $N=1,2,4,\dots,256$ is
+\[
+\begin{array}{lccccccccc}
+N & 1 & 2 & 4 & 8 & 16 & 32 & 64 & 128 & 256\\[2pt]
+\rho_N & \MSRhoOne & \MSRhoTwo & \MSRhoFour & \MSRhoEight & \MSRhoSixteen &
+\MSRhoThirtyTwo & \MSRhoSixtyFour & \MSRhoOneTwentyEight & \MSRhoTwoFiftySix
+\end{array}
+\]
 
 \section{Corrections we made during the study}
 \label{app:corrections}
@@ -959,6 +981,16 @@ transfer to policy pipelines is refuted and the paper's practical claim should b
 retreated to the controlled setting. Ten or more seeds per arm with bootstrap
 intervals are the minimum for the comparison to be interpretable.
 
+Two further failure modes would challenge the central claims directly. First, if the
+paired estimator of Sec.~\ref{sec:estimator} fails to track an independently computed
+population $\rho^\ast$ wherever both are available, the measured $\rho$ curves lose their
+interpretation as conditional-spread retention. Second, if the mean-independence
+criterion fails under the finite-moment and population-optimum assumptions of
+Thm.~\ref{thm:optimal}---for instance if a pointwise $L^2$ regressor retains conditional
+spread when the conditional mean does not depend on $x_0$---then the exact criterion is
+not exact. Data-side estimators that survive the high-dimensional regime where the current
+$k$NN estimator fails (Sec.~\ref{sec:mnist}) are the prerequisite for the first test.
+
 \section{Scope and assumptions}
 \label{app:scope}
 \begin{itemize}
@@ -976,8 +1008,8 @@ intervals are the minimum for the comparison to be interpretable.
   build). No GPU was used at any point.
   \item \textbf{Attribution:} we do not reuse any author repository; each component is
   re-implemented from the published objective. Any error is ours.
-  \item \textbf{Target venue:} ICLR 2027, double-blind, main text $\le9$ pages
-  excluding references and appendices \citep{iclr2027cfp}.
+  \item \textbf{Target venue:} ICLR 2027, double-blind. Submission metadata is not a
+  scientific claim and is therefore not cited.
 \end{itemize}
 
 \end{document}

@@ -1,62 +1,79 @@
 # -*- coding: utf-8 -*-
-"""MNIST 16×16 端点回归：均值依赖判据在真实数据上的最小非合成验证。
+"""MNIST 16x16 endpoint regression: the minimal non-synthetic verification of the
+mean-dependence criterion on real data.
 
 --------------------------------------------------------------------
-设计（2026-09-17，P0「至少一个公开非合成、无硬件基准」的最小实现）
+Design (2026-09-17, P0 minimal implementation of "at least one public, non-synthetic,
+no-hardware-baseline" experiment)
 --------------------------------------------------------------------
-源 x0 ~ N(0, I_256)，三种耦合共享同一源分布，只有配对规则不同：
+Source x0 ~ N(0, I_256); three couplings share the same source distribution, differing
+only in the pairing rule:
 
-  A  independent      y = x̃，x̃ 独立于 x0
-      E[y|x0]=μ（数据均值图）→ L2 最优映射塌缩（复现 shou2026nfm 的结论）
+  A  independent      y = x~, x~ independent of x0
+      E[y|x0]=mu (data mean map) -> L2 optimal map collapses (reproduces the conclusion
+      of shou2026nfm)
 
   B  dependent but mean-independent
-      y = μ + a(x0)·(x̃ − μ)，a(x0) = 1 + 0.8·tanh(x0[1])
-      E[y|x0] = μ + a(x0)(E[x̃]−μ) = μ：均值独立；
-      但 Var(y|x0) = a(x0)²Var(x̃) 随 x0 强变化：统计依赖（dCor 显著）。
-      → 「依赖」救不了塌缩；只有均值依赖判据能预判它仍会塌缩。
+      y = mu + a(x0)·(x~ - mu), a(x0) = 1 + 0.8·tanh(x0[1])
+      E[y|x0] = mu + a(x0)(E[x~]-mu) = mu: mean-independent;
+      but Var(y|x0) = a(x0)^2 Var(x~) varies strongly with x0: statistical dependence
+      (significant dCor). -> "dependence" alone does not rescue collapse; only the
+      mean-dependence criterion can predict that it will still collapse.
 
-  C  mini-batch OT    每批对 (x0 批, 图像批) 做最优传输指派
-      E[y|x0] ≈ 确定性映射 → 不塌缩。
+  C  mini-batch OT    per batch, optimal transport assignment between (x0 batch, image batch)
+      E[y|x0] ≈ deterministic map -> no collapse.
 
-  D  sorted quantile pairing（贪心均值依赖最大化构造，2026-09-17 追加）
-      每批把 x0 按 x0[:,1] 升序、图像按其在数据第一主轴 v1 上的投影
-      升序，秩对秩配对（O(m log m)，无指派求解器）。
-      E[y|x0] ≈ μ + q(x0[:,1])·v1：均值通过一个标量统计量确定性依赖
-      x0 → 判据预言不塌缩；但 ρ(f*(D)) ≈ λ1/trVar(y)（PC1 解释方差
-      份额），保真度低于全空间 OT。A/B（塌缩）< D（部分解除）< C
-      （完全解除）构成均值依赖强度的阶梯：判据不仅诊断，还指出修法。
+  D  sorted quantile pairing (greedy mean-dependence maximization construction, added 2026-09-17)
+      per batch, sort x0 by x0[:,1] ascending, sort images by their projection on the
+      data's first principal axis v1 ascending, and pair rank to rank (O(m log m), no
+      assignment solver).
+      E[y|x0] ≈ mu + q(x0[:,1])·v1: the mean depends deterministically on x0 through a
+      scalar statistic -> the criterion predicts no collapse; but rho(f*(D)) ≈ lambda1/trVar(y)
+      (the PC1 explained-variance fraction), so fidelity is lower than full-space OT.
+      A/B (collapse) < D (partial release) < C (full release) form a ladder of
+      mean-dependence strength: the criterion not only diagnoses, but also points to the fix.
 
-预注册判据（seed 0 校准后冻结；阈值见 JSON 的 protocol.thresholds）
-  M1  dCor(B) 置换 p < 0.01 且 dCor(A) 置换 p ≥ 0.05
-      （B 全体种子 p<0.01；A 的 0.05 水平误报数按种子数伸缩：
-      5 种子允许 ≤1、10 种子允许 ≤2——多重性控制，
-      逐种子 AND 在 10 种子下误拒概率约 40%）
-  M2  ρ̂_corr(A) < 0.10 且 ρ̂_corr(B) < 0.10   （数据侧诊断都预测塌缩）
-  M3  ρ(f̂)(A) < 0.10 且 ρ(f̂)(B) < 0.10       （训练后确实都塌缩）
-  M4  ρ(f̂)(C) > 0.25                        （OT 训练后解除塌缩）
-      注：ρ̂_corr(C) 不进判据——d=256、n=1000 下 kNN 估计量对所有耦合都
-      返回 ≈0（维度灾难：kNN 邻居的 OT 目标与查询点无关），估计量在高维
-      的失效域如实写入论文局限；真实数据上判据的价值由训练后映射验证。
-  M5  cSW(C) < cSW(A) 且 cSW(C) < cSW(B)      （保真度）
-  M6  mu_err(A) < 0.5 且 mu_err(B) < 0.5      （输出均值图落在 μ 附近而非 0）
-  M7  dcor(D) > dcor(A)（逐种子）              （构造的配对产生可检出依赖）
-  M8  rho_tr(D) > rho_tr(A) 且 > rho_tr(B)     （逐种子方向性：不塌缩）
-  M9  cSW(D) < cSW(A) 且 < cSW(B)              （逐种子方向性：保真度改善）
-  （M7-M9 为方向性判据，无常数阈值；D 的置换 p 值只作诊断量报告——
-  单坐标→单方向的依赖效应量小，n=1000 置换检验功效不足，不作判据。）
+Pre-registered criteria (frozen after seed-0 calibration; thresholds in the JSON's
+protocol.thresholds)
+  M1  dCor(B) permutation p < 0.01 and dCor(A) permutation p >= 0.05
+      (B: all seeds p<0.01; A's 0.05-level false positives scale with the seed count:
+      5 seeds allow <=1, 10 seeds allow <=2 -- multiplicity control; the per-seed AND
+      would have an ~40% false-rejection probability under 10 seeds)
+  M2  rho_hat_corr(A) < 0.10 and rho_hat_corr(B) < 0.10   (data-side diagnostics both predict collapse)
+  M3  rho(f_hat)(A) < 0.10 and rho(f_hat)(B) < 0.10       (after training both truly collapse)
+  M4  rho(f_hat)(C) > 0.25                        (OT un-collapses after training)
+      Note: rho_hat_corr(C) does not enter the criteria -- at d=256, n=1000 the kNN
+      estimator returns ≈0 for all couplings (curse of dimensionality: the kNN neighbours'
+      OT target is unrelated to the query point), and the estimator's high-dimensional
+      failure region is honestly recorded as a paper limitation; on real data the
+      criterion's value is verified through the trained map.
+  M5  cSW(C) < cSW(A) and cSW(C) < cSW(B)      (fidelity)
+  M6  mu_err(A) < 0.5 and mu_err(B) < 0.5      (output mean map lands near mu rather than 0)
+  M7  dcor(D) > dcor(A) (per seed)              (the constructed pairing produces detectable dependence)
+  M8  rho_tr(D) > rho_tr(A) and > rho_tr(B)     (per-seed directional: no collapse)
+  M9  cSW(D) < cSW(A) and < cSW(B)              (per-seed directional: fidelity improves)
+  (M7-M9 are directional criteria with no constant threshold; D's permutation p-value is
+  only reported as a diagnostic -- the single-coordinate -> single-direction dependence
+  effect size is small and the n=1000 permutation test is underpowered, so it is not used
+  as a criterion.)
 
-判据只写方向和阈值，不写倍数（沿用 run_loss_ladder 的纪律：倍数取决于
-优化程度，不可预注册）。ρ̂ 的 1/k 偏差用论文自身的有限近邻律修正：
-ρ̂_corr = (ρ̂_raw − 1/k)/(1 − 1/k)。
+The criteria only state direction and thresholds, not multiples (following the discipline
+of run_loss_ladder: a multiple depends on optimization depth and cannot be pre-registered).
+rho_hat's 1/k bias is corrected with the paper's own finite-neighbor law:
+rho_hat_corr = (rho_hat_raw - 1/k)/(1 - 1/k).
 
-实现注意（2026-09-17 校准踩过的坑）：
-- dCor 用 U 统计量版：双中心化后**对角置零**。距离矩阵中心化后
-  A_ii ≈ −2×行均值（256 维约 −40），含对角的 dc2 被对角乘积主导
-  （贡献 ≈ diag²/n），高维下独立数据也会给出 dcor≈0.7。
-- 所有成对距离用 Gram 技巧（‖u‖²+‖v‖²−2u·v），绝不构造 n×m×d 广播数组。
-- 耦合池用全量 20000 训练图 + hidden 128 + weight decay，压网络记忆化
-  （2k 池 + 384 宽实测 ρ(f̂) 虚高到 0.63；20k 池 + 384 宽仍 0.78）。
-- C 配置的 ρ̂ 需要一个固定 OT 配对池（训练时逐批 OT 无固定池可用）。
+Implementation notes (pitfalls hit during 2026-09-17 calibration):
+- dCor uses the U-statistic version: after double-centering, **zero out the diagonal**.
+  After centering the distance matrix, A_ii ≈ -2×row-mean (~-40 at 256 dims); including
+  the diagonal, dc2 is dominated by the diagonal product (contribution ≈ diag²/n), so
+  under high dimensions even independent data gives dcor≈0.7.
+- All pairwise distances use the Gram trick (‖u‖²+‖v‖²−2u·v); never construct an
+  n×m×d broadcast array.
+- The coupling pool uses the full 20000 training images + hidden 128 + weight decay to
+  suppress network memorization (2k pool + 384 width gave a spuriously high rho(f_hat) of
+  0.63; 20k pool + 384 width still 0.78).
+- The C configuration's rho_hat needs a fixed OT pairing pool (per-batch OT during training
+  has no fixed pool available).
 """
 import json
 import os
@@ -92,12 +109,12 @@ from provenance import (attach_provenance, protocol_fingerprint,  # noqa: E402
 PROTOCOL_FILES = ["code/experiments/run_mnist_collapse.py", "code/src/provenance.py"]
 
 SEEDS = tuple(range(10))
-DIM = 256                      # 16×16
-K_KNN = 32                     # 数据侧 kNN 估计的近邻数（与论文 §6 一致的量级）
-N_POOL = 20000                 # 耦合池＝全量 MNIST 训练集（压记忆化）
-N_OTPOOL = 1000                # C 配置 ρ̂ 诊断用的固定 OT 池
-N_DIAG = 2000                  # dCor / ρ̂ 的查询样本数
-N_EVAL = 4000                  # 训练后评估样本数
+DIM = 256                      # 16x16
+K_KNN = 32                     # data-side kNN estimator's neighbour count (same order of magnitude as paper Sec. 6)
+N_POOL = 20000                 # coupling pool = full MNIST training set (suppress memorization)
+N_OTPOOL = 1000                # C-config fixed OT pool for rho_hat diagnostics
+N_DIAG = 2000                  # dCor / rho_hat query sample count
+N_EVAL = 4000                  # post-training evaluation sample count
 TRAIN_STEPS = 4000
 BATCH = 256
 HIDDEN = 128
@@ -110,9 +127,9 @@ THRESHOLDS = {"M1_p_B": 0.01, "M1_p_A": 0.05, "M2_rho_hat": 0.10,
 torch.set_num_threads(8)
 
 
-# ---------------------------------------------------------------- 基础
+# ---------------------------------------------------------------- basics
 def _sqdist(A, B):
-    """成对平方欧氏距离（Gram 技巧），永不构造 A×B×d 广播数组。"""
+    """Pairwise squared Euclidean distance (Gram trick); never constructs an A×B×d broadcast array."""
     aa = (A ** 2).sum(1)[:, None]
     bb = (B ** 2).sum(1)[None, :]
     return np.maximum(aa + bb - 2.0 * (A @ B.T), 0.0)
@@ -121,12 +138,12 @@ def _sqdist(A, B):
 def load_mnist16():
     d = np.load(os.path.join(ROOT, "code", "data", "mnist_16.npz"))
     x = d["xtr"].reshape(len(d["xtr"]), -1).astype(np.float64)
-    return x  # (20000, 256)，[0,1]
+    return x  # (20000, 256), [0,1]
 
 
-# ---------------------------------------------------------------- 耦合
+# ---------------------------------------------------------------- couplings
 def a_scale(x0):
-    """B 配对的依赖幅度：只依赖 x0 的第 1 个坐标，均值不变、方差强变。"""
+    """Dependence amplitude for the B pairing: depends only on x0's 1st coordinate; mean unchanged, variance strongly varied."""
     return 1.0 + 0.8 * np.tanh(x0[:, 1:2])
 
 
@@ -136,7 +153,7 @@ def make_pairs_B(x0, xtilde, mu):
 
 
 def ot_pairs(x0, y):
-    """批内最优传输指派，返回按 x0 行序重排后的 y。"""
+    """In-batch optimal transport assignment; returns y reordered to x0's row order."""
     r, cc = linear_sum_assignment(_sqdist(x0, y))
     out = np.empty_like(y)
     out[r] = y[cc]
@@ -144,7 +161,7 @@ def ot_pairs(x0, y):
 
 
 def pc1_axis(data):
-    """图像池第一主成分方向（数据驱动，不挑坐标；256x256 特征分解代价可忽略）。"""
+    """First principal-component direction of the image pool (data-driven, no coordinate picking; 256x256 eigen-decomposition cost is negligible)."""
     c = data - data.mean(0)
     cov = (c.T @ c) / len(c)
     _w, v = np.linalg.eigh(cov)
@@ -152,10 +169,11 @@ def pc1_axis(data):
 
 
 def sorted_pairs(x0, y, v1):
-    """D 配对：批内 x0 按 x0[:,1] 升序、y 按 v1 投影升序，秩对秩配对。
+    """D pairing: within batch, sort x0 by x0[:,1] ascending, sort y by v1 projection
+    ascending, and pair rank to rank.
 
-    使 E[y|x0] ≈ x0 的确定性函数（均值依赖最大化的贪心构造）；
-    与 B 用同一坐标 x0[:,1]，保证可比性。
+    Makes E[y|x0] ≈ a deterministic function of x0 (greedy construction maximizing
+    mean dependence); uses the same coordinate x0[:,1] as B to guarantee comparability.
     """
     ox = np.argsort(x0[:, 1])
     oy = np.argsort(y @ v1)
@@ -164,14 +182,14 @@ def sorted_pairs(x0, y, v1):
     return out
 
 
-# ---------------------------------------------------------------- 诊断
+# ---------------------------------------------------------------- diagnostics
 def _center(d):
-    """双中心化：d_ij − 行均值_i − 列均值_j + 总均值（每项只加一次）。"""
+    """Double centering: d_ij - row_mean_i - col_mean_j + grand_mean (each term added once)."""
     return d - d.mean(0, keepdims=True) - d.mean(1, keepdims=True) + d.mean()
 
 
 def dcor(x0, y):
-    """距离相关（U 统计量版：中心化后对角置零，去高维对角偏置）。"""
+    """Distance correlation (U-statistic version: diagonal zeroed after centering, removing the high-dimensional diagonal bias)."""
     a = _center(np.sqrt(_sqdist(x0, x0)))
     b = _center(np.sqrt(_sqdist(y, y)))
     np.fill_diagonal(a, 0.0)
@@ -185,11 +203,14 @@ def dcor(x0, y):
 
 
 def dcor_perm_p(x0, y, rng, n_perm=200):
-    """dcor 的置换检验 p 值：置换 y 的行重算 dc2，看观测值在零分布中的位置。
+    """Permutation-test p-value for dcor: permute the rows of y, recompute dc2, and see
+    where the observed value falls in the null distribution.
 
-    为什么不用固定阈值：dcor 估计量在独立性下仍有 O(1/sqrt(n)) 的正偏置与
-    涨落（实测种子 3 的独立配置 dcor=0.058），固定阈值会校准过拟合；
-    p 值对每个种子各自校准零分布，是统计上正当的判据。
+    Why not a fixed threshold: even under independence the dcor estimator retains an
+    O(1/sqrt(n)) positive bias and fluctuation (measured dcor=0.058 for an independent
+    config at seed 3), so a fixed threshold would overfit the calibration; the p-value
+    calibrates the null distribution separately for each seed, making it a statistically
+    valid criterion.
     """
     a = _center(np.sqrt(_sqdist(x0, x0)))
     b = _center(np.sqrt(_sqdist(y, y)))
@@ -206,7 +227,7 @@ def dcor_perm_p(x0, y, rng, n_perm=200):
 
 
 def knn_rho(x0_pool, y_pool, x0_query, y_ref, k=K_KNN):
-    """数据侧均值依赖比：kNN 回归估计 E[y|x0]，返回 (raw, corrected)。"""
+    """Data-side mean-dependence ratio: kNN regression estimates E[y|x0]; returns (raw, corrected)."""
     preds = np.empty((len(x0_query), y_pool.shape[1]))
     pool_sq = (x0_pool ** 2).sum(1)
     for i in range(0, len(x0_query), 256):
@@ -235,13 +256,13 @@ def sliced_w2(A, B, rng, n_proj=N_PROJ):
 
 
 def rho_of_map(outputs, y_ref):
-    """训练映射的实现条件展布比（无上下文情形）：trVar(f̂)/trVar(y)。"""
+    """Realized conditional spread ratio of the trained map (context-free case): trVar(f_hat)/trVar(y)."""
     num = np.trace(np.cov(outputs, rowvar=False))
     den = np.trace(np.cov(y_ref, rowvar=False))
     return float(num / den)
 
 
-# ---------------------------------------------------------------- 网络
+# ---------------------------------------------------------------- network
 def build_net():
     return nn.Sequential(
         nn.Linear(DIM, HIDDEN), nn.ReLU(),
@@ -252,14 +273,16 @@ def build_net():
 
 def train_net(y_pool_t, seed, x0_pool, data, pair="none", v1=None,
               steps=TRAIN_STEPS, stop_at_baseline=None):
-    """pair="none"：固定配对池 y_pool_t 按 x0 索引取批；
-    "ot"：每步批内最优传输指派；"sorted"：每步批内 D 排序配对。
+    """pair="none": take batches from the fixed pairing pool y_pool_t indexed by x0;
+    "ot": per-step in-batch optimal transport assignment; "sorted": per-step in-batch D sorted pairing.
 
-    stop_at_baseline：A/B 的种群最优是条件均值 μ，其训练损失恰为 μ 基线；
-    损失 EMA 降到基线即停，防止继续训练滑入"记住训练对"的记忆化区
-    （2026-09-17 校准实测：不早停时 loss_ratio 掉到 0.55-0.61，ρ_tr 虚高
-    到 0.44-0.51）。C 的最优解远低于基线，传 None 跑满步数。
-    返回 (net, final_loss, steps_done)。
+    stop_at_baseline: A/B's population optimum is the conditional mean mu, whose training
+    loss is exactly the mu baseline; stop once the loss EMA drops to the baseline, to
+    prevent continued training from sliding into the "memorize the training pairs"
+    memorization region (2026-09-17 calibration: without early stopping, loss_ratio drops
+    to 0.55-0.61 and rho_tr spuriously rises to 0.44-0.51). C's optimum is far below the
+    baseline, so pass None to run the full step count.
+    Returns (net, final_loss, steps_done).
     """
     torch.manual_seed(seed)
     net = build_net()
@@ -293,7 +316,7 @@ def train_net(y_pool_t, seed, x0_pool, data, pair="none", v1=None,
     return net, loss_v, steps_done
 
 
-# ---------------------------------------------------------------- 主流程
+# ---------------------------------------------------------------- main flow
 def run_seed(seed, data, mu, smoke=False):
     rng = np.random.default_rng(1000 + seed)
     steps = 800 if smoke else TRAIN_STEPS
@@ -311,11 +334,11 @@ def run_seed(seed, data, mu, smoke=False):
     v1 = pc1_axis(data[:n_pool])
 
     out = {}
-    nd = min(1000, n_diag)  # 冒烟模式 n_diag<1000 时同步缩小诊断样本
+    nd = min(1000, n_diag)  # in smoke mode when n_diag<1000, shrink the diagnostic sample accordingly
     for cfg in ("A_independent", "B_dependent_meandep0", "C_ot",
                 "D_sorted_meanmax"):
         t0 = time.time()
-        # ---- 该耦合的训练对（C 训练时逐批 OT，但诊断需要固定池）
+        # ---- the coupling's training pairs (C does per-batch OT at training time, but diagnostics need a fixed pool)
         if cfg == "A_independent":
             y_pool = xt_pool.copy()
             y_pool_t = torch.from_numpy(y_pool).float()
@@ -332,7 +355,7 @@ def run_seed(seed, data, mu, smoke=False):
                               data[rng.integers(0, len(data), size=n_ot)])
             y_pool_t = None
 
-        # ---- 数据侧诊断（训练前）
+        # ---- data-side diagnostics (before training)
         if cfg == "C_ot":
             diag_pairs = ot_pairs(x0_diag[:nd],
                                   data[rng.integers(0, len(data), size=nd)])
@@ -355,7 +378,7 @@ def run_seed(seed, data, mu, smoke=False):
         rho_raw, rho_corr = knn_rho(x0_pool[:len(y_pool)], y_pool,
                                     x0_diag, y_ref_diag)
 
-        # ---- 训练（A/B 早停于 μ 基线＝种群最优点；C 跑满步数）
+        # ---- training (A/B early-stop at the mu baseline = population optimum; C runs full steps)
         if cfg in ("C_ot", "D_sorted_meanmax"):
             stop_bl = None
         else:
@@ -366,7 +389,7 @@ def run_seed(seed, data, mu, smoke=False):
             y_pool_t, seed, x0_pool, data, pair=pair, v1=v1,
             steps=steps, stop_at_baseline=stop_bl)
 
-        # ---- 训练后评估
+        # ---- post-training evaluation
         with torch.no_grad():
             outs = net(torch.from_numpy(x0_eval).float()).numpy()
         if cfg == "B_dependent_meandep0":
@@ -400,12 +423,13 @@ def run_seed(seed, data, mu, smoke=False):
 
 
 def evaluate_checks(per_seed):
-    """预注册判据：按种子逐条判（任一种子判负即 False）。"""
+    """Pre-registered criteria: judged per seed, one-by-one (any seed failing makes it False)."""
     th = THRESHOLDS
     ps = list(per_seed.values())
     checks = {
-        # A 侧允许多重比较下的 1 次误报（5 种子各 0.05 水平，
-        # 全体同时 ≥0.05 的概率只有 0.95^5≈0.77，逐种子 AND 会校准过拟合）
+        # A side allows 1 false positive under multiple comparisons (each of 5 seeds at
+        # the 0.05 level; the probability all are >=0.05 at once is only 0.95^5≈0.77, so
+        # the per-seed AND would overfit the calibration)
         "M1_B_is_dependent": (
             all(r["B_dependent_meandep0"]["dcor_p"] < th["M1_p_B"] for r in ps)
             and sum(1 for r in ps
@@ -455,10 +479,10 @@ def main(smoke=False, seeds=SEEDS, merge=False):
             existing = json.load(f)
         require_merge_compatible(existing, protocol_id, out)
         per_seed = dict(existing.get("per_seed", {}))
-        print("merge: 载入既有种子 %s" % sorted(per_seed, key=int), flush=True)
+        print("merge: loading existing seeds %s" % sorted(per_seed, key=int), flush=True)
     for sd in seeds:
         if str(sd) in per_seed:
-            print("skip seed %d（结果已在报告中）" % sd, flush=True)
+            print("skip seed %d (result already in report)" % sd, flush=True)
             continue
         print("== seed %d ==" % sd, flush=True)
         per_seed[str(sd)] = run_seed(sd, data, mu, smoke=smoke)
@@ -515,7 +539,7 @@ def main(smoke=False, seeds=SEEDS, merge=False):
                       PROTOCOL_FILES, merged=merge)
     with open(out, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
-    print("报告已写入 %s" % out, flush=True)
+    print("report written to %s" % out, flush=True)
     print("verdict: %s" % verdict, flush=True)
     return 0 if all(checks.values()) else 1
 

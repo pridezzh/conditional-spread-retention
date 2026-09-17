@@ -1,63 +1,70 @@
 # -*- coding: utf-8 -*-
-r"""不可能性定理的构造性验证：让 ρ 精确扫描 [0,1]，而数据分布一步不动。
+r"""Constructive validation of the impossibility theorem: let rho scan [0,1] exactly, while the data distribution stays fixed.
 
 --------------------------------------------------------------------
-这是全篇创新性所系的实验，先说清它证的是什么
+This is the experiment carrying the paper's novelty; first clarify what it proves
 --------------------------------------------------------------------
-耦合文献已经说过"耦合影响一步质量"。所以本文**不能**只主张"耦合重要"。
-本实验要证的是一条更强、且此前无人陈述的命题：
+The coupling literature has already said "coupling affects one-step quality". So this
+paper **cannot** merely claim "coupling matters". What this experiment proves is a
+stronger claim that no one has stated before:
 
-    **【不可能性】** 设 $p(c,x_1)$ 固定。则 $\\rho(f^\\*)$ 的取值**覆盖整个 $[0,1]$**，
-    且两个端点都可达 —— 而实现这件事的那一族训练配置，其 $(c,x_1)$ 边缘分布
-    **逐样本完全相同**。
+    **[Impossibility]** Fix $p(c,x_1)$. Then the values of $\rho(f^*)$ **cover the
+    whole $[0,1]$**, and both endpoints are attainable -- yet the family of training
+    configurations that achieves this has $(c,x_1)$ marginals that are **identical
+    sample by sample**.
 
-推论（这才是要害）：
+Corollary (this is the crux):
 
-    任何**只依赖数据分布**的泛函 $\\mathcal A(p(c,x_1))$ —— 无论是 $\\hat D$、
-    $\\Lambda$、还是任何未来会被提出的"多模态分数" ——
-    都**不可能**判定一步会不会丢模态。因为它要区分的两种情形，数据分布是同一个。
-    **这不是估计精度问题，是信息不足。**
+    Any functional $\mathcal A(p(c,x_1))$ that depends **only on the data distribution**
+    -- whether $\hat D$, $\Lambda$, or any "multimodal score" proposed in the future --
+    **cannot** determine whether one step loses modes. Because the two situations it
+    must distinguish share the same data distribution.
+    **This is not an estimation-accuracy problem; it is insufficient information.**
 
 --------------------------------------------------------------------
-构造：α-插值耦合，且可解析预测
+Construction: alpha-interpolation coupling, with an analytic prediction
 --------------------------------------------------------------------
-取定条件分布 $p_1(\\cdot\\mid c)$，取 $T(\\cdot,c)$ 为任意把 $p_0$ 推到 $p_1(\\cdot\\mid c)$
-的确定性输运映射（这里用**精确速度场的 512 步欧拉流映射**，即 reflow 会产生的那个映射）。
+Fix the conditional distribution $p_1(\cdot\mid c)$, and let $T(\cdot,c)$ be any
+deterministic transport map pushing $p_0$ to $p_1(\cdot\mid c)$
+(here we use the **512-step Euler flow map of the exact velocity field**, i.e. the map that reflow produces).
 
-定义 **α-混合耦合**：
+Define the **alpha-mixture coupling**:
 
-    x_1 = B·T(x_0,c) + (1-B)·X,    B ~ Bernoulli(α),  X ~ p_1(·|c) 且与 x_0 独立。
+    x_1 = B·T(x_0,c) + (1-B)·X,    B ~ Bernoulli(α),  X ~ p_1(·|c) independent of x_0.
 
-两个分支的边缘都是 $p_1(\\cdot\\mid c)$ ⟹ **整个 (c,x_1) 边缘分布与 α 无关**。
+Both branches have marginal $p_1(\cdot\mid c)$ ==> **the whole (c,x_1) marginal is independent of α**.
 
-而最优一步映射为
+The optimal one-step map is
 
     E[x_1 | x_0, c] = α·T(x_0,c) + (1-α)·m(c)
 
-    ⟹ ρ*(α) = α² · tr Var(x_1|c) / tr Var(x_1|c) = **α²**
+    ==> ρ*(α) = α² · tr Var(x_1|c) / tr Var(x_1|c) = **α²**
 
-**于是 ρ\*(α) = α² 精确扫描 [0,1]，而数据分布不动。** 这是不可能性定理的构造性证明，
-并且附带一条**无自由参数的定量律**可直接检验。
+**Thus ρ*(α) = α² scans [0,1] exactly, while the data distribution stays fixed.** This
+is the constructive proof of the impossibility theorem, and it comes with a
+**parameter-free quantitative law** that can be tested directly.
 
 --------------------------------------------------------------------
-kNN 测量时的修正项（同样是解析的）
+Correction term when measuring with kNN (also analytic)
 --------------------------------------------------------------------
-用等权 kNN 去**测** ρ 时，预测 $\\frac1k\\sum_{i\\in N_k}x_1^{(i)}$ 的方差有两块：
-  * 来自 α 分支：$\\approx α T(x_0,c)$，随 $x_0$ 变化，方差 $= α^2\\,\\mathrm{trVar}(x_1|c)$；
-  * 条件残差：由全方差公式，其平均方差为
-    $(1-\\alpha^2)\\,\\mathrm{trVar}(x_1|c)$；k 个局部响应取均值后除以 k。
+When using uniform-weight kNN to **measure** ρ, the variance of the prediction
+$\frac1k\sum_{i\in N_k}x_1^{(i)}$ has two parts:
+  * from the alpha branch: $\approx α T(x_0,c)$, varying with $x_0$, variance
+    $= α^2\,\mathrm{trVar}(x_1|c)$;
+  * conditional residual: by the law of total variance, its averaged variance is
+    $(1-α^2)\,\mathrm{trVar}(x_1|c)$; taking the mean of k local responses divides it by k.
 
-    ⟹ **ρ̂_kNN(α) ≈ α² + (1-α²)/k**
+    ==> **ρ̂_kNN(α) ≈ α² + (1-α²)/k**
 
-α=0 时退化为已知的 $1/k$ 律；α=1 时预测 $\\approx1$。两项都检验。
+At α=0 it reduces to the known $1/k$ law; at α=1 the prediction is $\approx1$. Both terms are tested.
 
-判据（预先写死）
-----------------
-  P1 ρ̂ 随 α 单调不减
-  P2 ρ̂(0) < 0.10，ρ̂(1) > 0.85
-  P3 **|D̂(α) − D̂(0)| < 0.02**（数据边缘分布相同）
-  P4 **|Λ̂(α) − Λ̂(0)| < 0.05**（同上）
-  P5 ρ̂ 与解析预测 α²+(1-α²)/k 的平均绝对差 < 0.08
+Criteria (fixed up front)
+-------------------------
+  P1 rho_hat is non-decreasing in alpha
+  P2 rho_hat(0) < 0.10, rho_hat(1) > 0.85
+  P3 **|D_hat(α) - D_hat(0)| < 0.02** (data marginals identical)
+  P4 **|Lambda_hat(α) - Lambda_hat(0)| < 0.05** (same reason)
+  P5 mean absolute deviation of rho_hat from the analytic prediction alpha^2+(1-alpha^2)/k < 0.08
 """
 import json
 import os
@@ -83,13 +90,13 @@ import numpy as np  # noqa: E402
 
 from deficit import gaussian_deficit  # noqa: E402
 
-# ---- 参数（事前固定） ----
+# ---- parameters (fixed up front) ----
 C, K, SIGMA, DIM = 4, 8, 0.25, 2
 ALPHAS = (0.0, 0.25, 0.50, 0.75, 1.0)
 N_TRAIN = 4000
 N_QUERY = 2000
 KNN_K = (20, 50)
-N_T_STEPS = 512          # 用精确速度场积分出确定性输运映射 T
+N_T_STEPS = 512          # integrate the exact velocity field into the deterministic transport map T
 SEEDS = (0, 1, 2)
 MODE_TOL = 0.6
 
@@ -99,15 +106,15 @@ CRIT = dict(P2_RHO0_MAX=0.10, P2_RHO1_MIN=0.85,
 
 
 def knn_variance_ratio(alpha, k):
-    """理想局部邻域下 kNN 条件均值估计量的方差比。
+    """Variance ratio of the kNN conditional-mean estimator under an ideal local neighborhood.
 
-    Var(E[Y|X]) / Var(Y) = alpha**2；剩余条件方差比例是
-    1-alpha**2，而不是 (1-alpha)**2。
+    Var(E[Y|X]) / Var(Y) = alpha**2; the remaining conditional-variance fraction is
+    1-alpha**2, not (1-alpha)**2.
     """
     return alpha ** 2 + (1.0 - alpha ** 2) / k
 
 
-# ---------------------------------------------------------------- 几何与精确速度场
+# ---------------------------------------------------------------- geometry and exact velocity field
 def build_geometry():
     centers = np.zeros((C, K, DIM))
     radii = np.zeros(C)
@@ -126,7 +133,8 @@ CENTERS, TR_VAR_COND = build_geometry()
 
 
 class ConditionalExactVelocity:
-    """独立耦合下、逐条件高斯混合的**精确**边缘 CFM 速度场（闭式）。"""
+    """Per-condition **exact** marginal CFM velocity field for Gaussian mixtures under
+    independent coupling (closed form)."""
 
     def __call__(self, x, t, j):
         mu = CENTERS[j]
@@ -144,7 +152,8 @@ VEL = ConditionalExactVelocity()
 
 
 def transport_map(x0, j, N=N_T_STEPS):
-    """确定性输运映射 T(·, j)：精确速度场的 N 步欧拉流映射（reflow 会产生的那个）。"""
+    """Deterministic transport map T(·, j): the N-step Euler flow map of the exact
+    velocity field (the one reflow produces)."""
     x = np.array(x0, dtype=np.float64, copy=True)
     h = 1.0 / N
     for i in range(N):
@@ -153,16 +162,17 @@ def transport_map(x0, j, N=N_T_STEPS):
 
 
 def sample_marginal(n, j, rng):
-    """从 p_1(·|j) 独立采样。"""
+    """Independent sampling from p_1(·|j)."""
     comp = rng.integers(0, K, size=n)
     return CENTERS[j, comp] + SIGMA * rng.normal(size=(n, DIM))
 
 
-# ---------------------------------------------------------------- α-混合耦合
+# ---------------------------------------------------------------- alpha-mixture coupling
 def sample_alpha(n, j, alpha, rng):
-    """α-混合耦合：以概率 α 取确定性分支 T(x0)，否则取独立样本。
+    """Alpha-mixture coupling: with probability alpha take the deterministic branch
+    T(x0), otherwise an independent sample.
 
-    **两个分支的边缘都是 p_1(·|j)，故 (j, x1) 的边缘分布与 α 无关。**
+    **Both branches have marginal p_1(·|j), so the (j, x1) marginal is independent of alpha.**
     """
     x0 = rng.normal(size=(n, DIM))
     B = rng.random(n) < alpha
@@ -174,7 +184,7 @@ def sample_alpha(n, j, alpha, rng):
     return x0, x1
 
 
-# ---------------------------------------------------------------- 估计器
+# ---------------------------------------------------------------- estimators
 def knn_uniform(Xtr, Ytr, Xq, k):
     d2 = ((Xq[:, None, :] - Xtr[None, :, :]) ** 2).sum(-1)
     idx = np.argpartition(d2, kth=k - 1, axis=1)[:, :k]
@@ -186,7 +196,7 @@ def tr_var(a):
 
 
 def d_hat_single(X1_by_cond):
-    """D = E_c[tr Var(x1|c)] / tr Var(x1)（不引入任何回归器）。"""
+    """D = E_c[tr Var(x1|c)] / tr Var(x1) (without introducing any regressor)."""
     within = float(np.mean([tr_var(X1_by_cond[j]) for j in range(C)]))
     total = tr_var(X1_by_cond.reshape(-1, DIM))
     return within / total
@@ -197,12 +207,12 @@ def mode_coverage(pred, centers_j, tol=MODE_TOL):
     return int((np.sqrt(d2.min(axis=0)) < tol).sum())
 
 
-# ---------------------------------------------------------------- 主流程
+# ---------------------------------------------------------------- main flow
 def run_seed(seed):
     rng = np.random.default_rng(seed)
     rows = []
     for alpha in ALPHAS:
-        # --- 固定一批 x0 与查询点，跨 α 复用，减少无关噪声 ---
+        # --- fix a batch of x0 and query points, reused across alpha to reduce irrelevant noise ---
         rng_a = np.random.default_rng(1000 * (seed + 1) + int(alpha * 100) + 7)
         Xtr, Ytr, Xq, Yq = [], [], [], []
         for j in range(C):
@@ -220,7 +230,7 @@ def run_seed(seed):
             rhos[k] = float(np.mean(num) / float(np.mean(TR_VAR_COND)))
             covs[k] = float(np.mean(cov))
             preds_by_k[k] = [rhos[k]]
-        # --- 数据侧统计量（与 α 无关的断言） ---
+        # --- data-side statistics (assertions independent of alpha) ---
         Yall = np.stack(Ytr)                                  # (C, n, d)
         D = d_hat_single(Yall)
         lam_per_cond = [gaussian_deficit(Yall[j], n_proj=64, seed=seed)[0]
@@ -230,7 +240,7 @@ def run_seed(seed):
                          rho={str(k): rhos[k] for k in KNN_K},
                          coverage={str(k): covs[k] for k in KNN_K}))
         print("    α=%.2f  D=%.4f  Λ=%.4f  |  " % (alpha, D, lam)
-              + "   ".join("ρ̂(k=%d)=%.4f (覆盖 %.1f/8)" % (k, rhos[k], covs[k])
+              + "   ".join("rho_hat(k=%d)=%.4f (cover %.1f/8)" % (k, rhos[k], covs[k])
                            for k in KNN_K), flush=True)
     return rows
 
@@ -238,9 +248,9 @@ def run_seed(seed):
 def main():
     t0 = time.time()
     print("=" * 78)
-    print("不可能性定理的构造性验证：ρ*(α) = α² 扫描 [0,1]，数据分布不动")
-    print("  判据（预先写死）：%s" % json.dumps(CRIT, ensure_ascii=False))
-    print("  kNN 解析修正预测：ρ̂(α) ≈ α² + (1-α²)/k")
+    print("Constructive validation of the impossibility theorem: rho*(alpha) = alpha^2 scans [0,1], data distribution fixed")
+    print("  criteria (fixed up front): %s" % json.dumps(CRIT, ensure_ascii=False))
+    print("  kNN analytic correction: rho_hat(alpha) ~ alpha^2 + (1-alpha^2)/k")
     print("=" * 78)
 
     all_rows = {}
@@ -257,9 +267,9 @@ def main():
         return float(np.mean(vals)), float(np.std(vals))
 
     print("\n" + "=" * 78)
-    print("跨 %d 个种子汇总（k=%d）" % (len(SEEDS), KNN_K[0]))
+    print("Aggregated over %d seeds (k=%d)" % (len(SEEDS), KNN_K[0]))
     k0 = KNN_K[0]
-    print("  %-6s %-12s %-12s %-12s %-12s" % ("α", "ρ̂ 实测", "α² 理论", "α²+(1-α²)/k", "D̂ / Λ̂"))
+    print("  %-6s %-12s %-12s %-12s %-12s" % ("alpha", "rho_hat", "alpha^2", "alpha^2+(1-a^2)/k", "D_hat / Lambda_hat"))
     print("-" * 78)
     curve, pred_curve = [], []
     for a in ALPHAS:
@@ -290,16 +300,16 @@ def main():
         P4_Lambda_invariant=bool(ldev < CRIT["P4_LAM_MAX_DIFF"]),
         P5_matches_analytic=bool(mad < CRIT["P5_PRED_MAD_MAX"]),
     )
-    print("  P1 单调=%s   P2 端点 ρ̂(0)=%.4f<%.2f, ρ̂(1)=%.4f>%.2f -> %s"
+    print("  P1 mono=%s   P2 endpoints rho_hat(0)=%.4f<%.2f, rho_hat(1)=%.4f>%.2f -> %s"
           % (mono, rho0, CRIT["P2_RHO0_MAX"], rho1, CRIT["P2_RHO1_MIN"], checks["P2_endpoints"]))
-    print("  P3 max|D̂(α)-D̂(0)| = %.5f (< %.3f) -> %s"
+    print("  P3 max|D_hat(alpha)-D_hat(0)| = %.5f (< %.3f) -> %s"
           % (ddev, CRIT["P3_D_MAX_DIFF"], checks["P3_D_invariant"]))
-    print("  P4 max|Λ̂(α)-Λ̂(0)| = %.5f (< %.3f) -> %s"
+    print("  P4 max|Lambda_hat(alpha)-Lambda_hat(0)| = %.5f (< %.3f) -> %s"
           % (ldev, CRIT["P4_LAM_MAX_DIFF"], checks["P4_Lambda_invariant"]))
-    print("  P5 与解析预测 α²+(1-α²)/k 的平均绝对差 = %.4f (< %.3f) -> %s"
+    print("  P5 mean abs diff from analytic alpha^2+(1-alpha^2)/k = %.4f (< %.3f) -> %s"
           % (mad, CRIT["P5_PRED_MAD_MAX"], checks["P5_matches_analytic"]))
     verdict = "PASS" if all(checks.values()) else "FAIL"
-    print("  VERDICT: %s     用时 %.0fs" % (verdict, time.time() - t0))
+    print("  VERDICT: %s     elapsed %.0fs" % (verdict, time.time() - t0))
     print("=" * 78)
 
     report = dict(theorem="rho*(alpha) = alpha^2 with (c,x1)-marginal invariant",
@@ -321,7 +331,7 @@ def main():
     out = os.path.join(logs, "verify_impossibility.json")
     with open(out, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
-    print("报告已写入 %s" % out)
+    print("Report written to %s" % out)
 
 
 if __name__ == "__main__":

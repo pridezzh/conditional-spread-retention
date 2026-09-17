@@ -1,49 +1,52 @@
 # -*- coding: utf-8 -*-
-"""多步欧拉的展布恢复：**精确速度场**下 rho_N 从 0 单调升到 1。
+"""Spread recovery by multi-step Euler: rho_N rises monotonically from 0 to 1 under the
+**exact velocity field**.
 
-为什么用精确速度场而不训练网络
-------------------------------
-若用训练出来的速度场，"rho_N 随 N 上升"可能混入两个因素：
-  1. 离散化误差随 N 减小（我们想验证的机制）；
-  2. 网络对速度场的拟合误差（我们不想混入的混淆因素）。
-用**闭式精确速度场**可以彻底消除 (2)，把机制单独隔离出来。
+Why use the exact velocity field instead of a trained network
+-----------------------------------------------------------
+If a trained velocity field were used, "rho_N rising with N" could mix in two factors:
+  1. discretization error shrinking as N grows (the mechanism we want to verify);
+  2. the network's fitting error on the velocity field (a confounding factor we do not want).
+Using the **closed-form exact velocity field** removes (2) entirely, isolating the mechanism.
 
-精确速度场的推导（各向同性高斯混合 + 独立耦合）
-----------------------------------------------
-设 x0 ~ N(0, I_d)，x1 ~ sum_k pi_k N(mu_k, sigma^2 I_d)，且 x0 _||_ x1。
-在分量 k 内，x_t = (1-t) x0 + t x1 是高斯的：
+Derivation of the exact velocity field (isotropic Gaussian mixture + independent coupling)
+------------------------------------------------------------------------------------------
+Let x0 ~ N(0, I_d), x1 ~ sum_k pi_k N(mu_k, sigma^2 I_d), with x0 _||_ x1.
+Within component k, x_t = (1-t) x0 + t x1 is Gaussian:
 
     E[x_t | k] = t mu_k
     Var(x_t | k) = s_t^2 I_d,   s_t^2 = (1-t)^2 + t^2 sigma^2
 
-且
+and
     Cov(x1, x_t | k) = t sigma^2 I_d
     Cov(x0, x_t | k) = (1-t) I_d
 
-于是（联合高斯的线性条件期望公式）
+Hence (linear conditional expectation of a joint Gaussian)
 
     E[x1 | x_t=x, k] = mu_k + (t sigma^2 / s_t^2) (x - t mu_k)
     E[x0 | x_t=x, k] =        ((1-t)   / s_t^2) (x - t mu_k)
 
-边缘速度场 u(x,t) = E[x1 - x0 | x_t = x] 按分量后验 w_k(x,t) 加权：
+The marginal velocity field u(x,t) = E[x1 - x0 | x_t = x] is weighted by the per-component
+posterior w_k(x,t):
 
     u(x,t) = sum_k w_k(x,t) [ mu_k + ((t sigma^2 - (1-t)) / s_t^2) (x - t mu_k) ]
     w_k(x,t) ∝ pi_k N(x ; t mu_k, s_t^2 I_d)
 
-**t=0 的检验**：s_0^2 = 1，且 N(x;0,I) 对各分量相同，故 w_k = pi_k，
-括号内化为 mu_k - x，于是
+**Check at t=0**: s_0^2 = 1, and N(x;0,I) is the same for every component, so w_k = pi_k,
+the bracket reduces to mu_k - x, and therefore
 
-    u(x,0) = sum_k pi_k (mu_k - x) = m - x          ← 端点恒等式
+    u(x,0) = sum_k pi_k (mu_k - x) = m - x          <- endpoint identity
 
-故 f_1(x0) = x0 + u(x0,0) = m 与 x0 无关 ⇒ rho_1 = 0（推论 1）。
+Thus f_1(x0) = x0 + u(x0,0) = m is independent of x0 => rho_1 = 0 (Corollary 1).
 
-而 N 步欧拉是 N 个"近恒等映射"的复合：
+And N-step Euler is the composition of N "near-identity maps":
     f_N = (I + u(., t_{N-1})/N) ∘ ... ∘ (I + u(., 0)/N)
-每一步都是简单映射，但**复合之后是高度非线性的输运映射**，
-且随 N 增大收敛到精确流映射 phi_{0->1}（它把 p0 推到 p1）。
-因此预期 rho_N -> 1。这就是"多步如何逃出塌缩"的机制。
+Each step is a simple map, but **their composition is a highly nonlinear transport map**,
+and as N grows it converges to the exact flow map phi_{0->1} (which pushes p0 to p1).
+Hence rho_N -> 1 is expected. This is the mechanism of "how multi-step escapes collapse".
 
-本脚本用闭式速度场数值验证：rho_1 = 0，rho_N 随 N 单调上升到接近 1。
+This script verifies numerically with the closed-form velocity field: rho_1 = 0, and
+rho_N rises monotonically with N to approach 1.
 """
 import json
 import os
@@ -68,7 +71,7 @@ import numpy as np  # noqa: E402
 
 
 class ExactGaussianMixtureVelocity:
-    """独立耦合下高斯混合的**精确**边缘 CFM 速度场。"""
+    """Exact marginal CFM velocity field for a Gaussian mixture under independent coupling."""
 
     def __init__(self, centers, weights, sigma):
         self.centers = np.asarray(centers, dtype=np.float64)
@@ -93,7 +96,7 @@ class ExactGaussianMixtureVelocity:
 
 
 def euler_map(vel, x0, N):
-    """N 步显式欧拉，步长 1/N，返回 f_N(x0)。"""
+    """N-step explicit Euler with step 1/N, returns f_N(x0)."""
     x = np.array(x0, dtype=np.float64, copy=True)
     h = 1.0 / N
     for k in range(N):
@@ -122,33 +125,33 @@ def main():
     rng = np.random.default_rng(0)
     N_SAMP = 4000
     X0 = rng.normal(size=(N_SAMP, 2))
-    # 目标边缘的真值（闭式：等权混合，中心在半径 R 的圆上）
+    # ground-truth of the target marginal (closed form: equal-weight mixture, centers on a circle of radius R)
     tr_var_x1 = float((C ** 2).sum(axis=1).mean() + 2 * SIGMA ** 2)
     m = (W[:, None] * C).sum(axis=0)
 
     print("=" * 68)
-    print("多步欧拉的展布恢复（精确速度场，无训练误差）")
-    print("  K=%d 环上等权高斯混合，半径 %.1f，sigma %.2f" % (K, RADIUS, SIGMA))
-    print("  闭式 tr Var(x1) = %.4f" % tr_var_x1)
+    print("Spread recovery by multi-step Euler (exact velocity field, no training error)")
+    print("  K=%d ring equal-weight Gaussian mixture, radius %.1f, sigma %.2f" % (K, RADIUS, SIGMA))
+    print("  closed-form tr Var(x1) = %.4f" % tr_var_x1)
     print("=" * 68)
 
-    # ---- 检验 1：端点恒等式 u(x,0) = m - x ----
-    print("\n[检验 1] 端点恒等式  u(x,0) = m - x")
+    # ---- Test 1: endpoint identity u(x,0) = m - x ----
+    print("\n[Test 1] Endpoint identity  u(x,0) = m - x")
     u0 = vel(X0, 0.0)
     err = np.abs(u0 - (m - X0)).max()
     print("    max |u(x,0) - (m - x)| = %.3e" % err)
     endpoint_ok = err < 1e-9
 
-    # ---- 检验 2：一步塌缩 rho_1 = 0 ----
-    print("\n[检验 2] 一步欧拉  f_1(x0) = x0 + u(x0,0) = m")
+    # ---- Test 2: one-step collapse rho_1 = 0 ----
+    print("\n[Test 2] One-step Euler  f_1(x0) = x0 + u(x0,0) = m")
     f1 = euler_map(vel, X0, 1)
     spread1 = float(f1.var(axis=0).sum())
-    print("    tr Var(f_1) = %.3e   （应为 0）" % spread1)
+    print("    tr Var(f_1) = %.3e   (should be 0)" % spread1)
     print("    rho_1 = %.6f" % realized_spread(f1, C * 0 + np.array([[0.0, 0.0]])))
     collapse_ok = spread1 < 1e-9
 
-    # ---- 检验 3：rho_N 随 N 上升 ----
-    print("\n[检验 3] rho_N 随步数上升")
+    # ---- Test 3: rho_N rises with N ----
+    print("\n[Test 3] rho_N rises with step count")
     N_LIST = [1, 2, 4, 8, 16, 32, 64, 128, 256]
     rows = []
     for N in N_LIST:
@@ -156,7 +159,7 @@ def main():
         rho = float(fN.var(axis=0).sum() / tr_var_x1)
         cov, tot = mode_coverage(fN, C, tol=0.6)
         rows.append(dict(N=N, rho=rho, modes_covered=cov, n_modes=tot))
-        print("    N=%-4d rho=%.4f   覆盖模态 %d/%d" % (N, rho, cov, tot))
+        print("    N=%-4d rho=%.4f   modes covered %d/%d" % (N, rho, cov, tot))
 
     rho = {r["N"]: r["rho"] for r in rows}
     mono = all(rho[N_LIST[i]] <= rho[N_LIST[i + 1]] + 1e-6
@@ -178,7 +181,7 @@ def main():
     }
 
     print("\n" + "=" * 68)
-    print("判据：端点恒等式成立 & rho_1=0 & rho_N 单调 & rho_256 > 0.90")
+    print("Criteria: endpoint identity holds & rho_1=0 & rho_N monotone & rho_256 > 0.90")
     print("  " + "  ".join("%s=%s" % (k, v) for k, v in report["checks"].items()))
     print("  VERDICT: %s" % report["verdict"])
     print("=" * 68)
@@ -188,7 +191,7 @@ def main():
     out = os.path.join(logs, "verify_multistep_theory.json")
     with open(out, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
-    print("报告已写入 %s" % out)
+    print("Report written to %s" % out)
 
 
 if __name__ == "__main__":

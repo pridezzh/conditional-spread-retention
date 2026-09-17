@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
-"""算出每条预注册判据的「余量 / 种子噪声」比，输出 Markdown 表格。
+"""Compute the "margin / seed noise" ratio for each pre-registered criterion and
+output a Markdown table.
 
-为什么要这个脚本
+Why this script
 ----------------
-"只有 3（或 5）个种子"这个批评的实质是：**判据的余量是否被种子噪声淹没**。
-定量的问法是：观测值与阈值之间隔了多少个种子的标准差？隔得越多，再加种子就越不可能翻案。
-按纪律（D8）不做心算，一律用脚本算，且直接读 results/*.json 的具名字段。
+The substance of the "only 3 (or 5) seeds" criticism is: **whether the criterion's
+margin is drowned out by seed noise**. The quantitative question is: how many
+seed standard deviations sit between the observed value and the threshold? The
+more of them, the less likely adding seeds would overturn the conclusion.
+Per discipline (D8) no mental arithmetic is done; everything is computed by script
+and reads the named fields of results/*.json directly.
 
-用法： python margin_vs_noise.py [out.md]
+Usage: python margin_vs_noise.py [out.md]
 """
 import json
 import os
@@ -34,7 +38,7 @@ def load(rel):
 
 def ratios(margin, sigma):
     if sigma is None or sigma <= 0:
-        return "inf（种子间方差为 0）"
+        return "inf (inter-seed variance is 0)"
     return "%.0f×" % (abs(margin) / sigma)
 
 
@@ -46,55 +50,55 @@ def main():
         s = ll["summary"]
         C = {"B1_l2_collapses": 0.05, "B2_chamfer_escapes": 0.5,
              "B3_balanced_escapes": 0.5, "B5_balanced_more_faithful": None}
-        rows.append(("B1 L1 塌缩", "ρ<0.05", "%.5f" % s["onestep_l2"]["rho"],
+        rows.append(("B1 L1 collapse", "rho<0.05", "%.5f" % s["onestep_l2"]["rho"],
                      "%.5f" % s["onestep_l2"]["rho_std"], n,
                      ratios(0.05 - s["onestep_l2"]["rho"], s["onestep_l2"]["rho_std"])))
-        rows.append(("B2 池化/逐条件 Chamfer 逃逸", "ρ>0.5 且覆盖≥6",
+        rows.append(("B2 pooled/per-condition Chamfer escape", "rho>0.5 and coverage>=6",
                      "%.4f" % s["onestep_chamfer"]["rho"], "%.5f" % s["onestep_chamfer"]["rho_std"], n,
                      ratios(s["onestep_chamfer"]["rho"] - 0.5, s["onestep_chamfer"]["rho_std"])))
-        rows.append(("B3 平衡指派逃逸", "ρ>0.5 且覆盖≥6",
+        rows.append(("B3 balanced assignment escape", "rho>0.5 and coverage>=6",
                      "%.4f" % s["onestep_balanced"]["rho"], "%.5f" % s["onestep_balanced"]["rho_std"], n,
                      ratios(s["onestep_balanced"]["rho"] - 0.5, s["onestep_balanced"]["rho_std"])))
-        # B4 判负：看"逐种子分离"而不是阈值余量
+        # B4 negative verdict: look at "per-seed separation" rather than threshold margin
         per = [ll["per_seed"][k]["onestep_chamfer"]["rho_abs_err"] for k in ll["per_seed"]]
         bal = [ll["per_seed"][k]["onestep_balanced"]["rho_abs_err"] for k in ll["per_seed"]]
-        sep = "逐种子完全分离：Chamfer 最大 %.4f < balanced 最小 %.4f" % (max(per), min(bal))
-        rows.append(("B4 平衡降权重误差", "Chamfer<balanced", "%.4f vs %.4f"
+        sep = "per-seed fully separated: Chamfer max %.4f < balanced min %.4f" % (max(per), min(bal))
+        rows.append(("B4 balanced reduces weight error", "Chamfer<balanced", "%.4f vs %.4f"
                      % (s["onestep_chamfer"]["rho_abs_err"], s["onestep_balanced"]["rho_abs_err"]),
-                     "—", n, "**判负**；" + sep))
+                     "—", n, "**verdict negative**; " + sep))
         d_csw = s["onestep_balanced"]["csw"] - s["onestep_chamfer"]["csw"]
         comb = (s["onestep_chamfer"]["csw_std"] ** 2 + s["onestep_balanced"]["csw_std"] ** 2) ** 0.5
-        rows.append(("B5 平衡更保真 (cSW)", "balanced<Chamfer",
+        rows.append(("B5 balanced more faithful (cSW)", "balanced<Chamfer",
                      "%.4f vs %.4f" % (s["onestep_balanced"]["csw"], s["onestep_chamfer"]["csw"]),
-                     "合并 σ=%.4f（%.1fσ 分离）" % (comb, abs(d_csw) / comb), n,
-                     "%s（判据取方向）" % ("成立" if d_csw < 0 else "不成立")))
+                     "combined sigma=%.4f (%.1f sigma separation)" % (comb, abs(d_csw) / comb), n,
+                     "%s (criterion takes direction)" % ("holds" if d_csw < 0 else "does not hold")))
     mm = load(os.path.join("results", "method_map.json"))
     if mm:
         n = len(mm["params"]["seeds"])
         g = mm["summary"]
-        rows.append(("C1 独立耦合@1 塌缩", "ρ<0.05", "%.5f" % g["cfm_indep@1"]["rho"],
+        rows.append(("C1 independent coupling @1 collapse", "rho<0.05", "%.5f" % g["cfm_indep@1"]["rho"],
                      "%.5f" % g["cfm_indep@1"]["rho_std"], n,
                      ratios(0.05 - g["cfm_indep@1"]["rho"], g["cfm_indep@1"]["rho_std"])))
-        rows.append(("C2 同网络@32 恢复", "ρ>0.75", "%.4f" % g["cfm_indep@32"]["rho"],
+        rows.append(("C2 same network @32 recovers", "rho>0.75", "%.4f" % g["cfm_indep@32"]["rho"],
                      "%.5f" % g["cfm_indep@32"]["rho_std"], n,
                      ratios(g["cfm_indep@32"]["rho"] - 0.75, g["cfm_indep@32"]["rho_std"])))
-        rows.append(("C3 OT 一步恢复", "ρ>0.50", "%.4f" % g["cfm_ot@1"]["rho"],
+        rows.append(("C3 OT one-step recovery", "rho>0.50", "%.4f" % g["cfm_ot@1"]["rho"],
                      "%.5f" % g["cfm_ot@1"]["rho_std"], n,
                      ratios(g["cfm_ot@1"]["rho"] - 0.50, g["cfm_ot@1"]["rho_std"])))
-        rows.append(("C4 reflow 一步恢复", "ρ>0.50", "%.4f" % g["reflow@1"]["rho"],
+        rows.append(("C4 reflow one-step recovery", "rho>0.50", "%.4f" % g["reflow@1"]["rho"],
                      "%.5f" % g["reflow@1"]["rho_std"], n,
                      ratios(g["reflow@1"]["rho"] - 0.50, g["reflow@1"]["rho_std"])))
-        rows.append(("C5 蒸馏一步恢复", "ρ>0.50", "%.4f" % g["distill@1"]["rho"],
+        rows.append(("C5 distillation one-step recovery", "rho>0.50", "%.4f" % g["distill@1"]["rho"],
                      "%.5f" % g["distill@1"]["rho_std"], n,
                      ratios(g["distill@1"]["rho"] - 0.50, g["distill@1"]["rho_std"])))
-        rows.append(("C6 逐点 L2 地板", "ρ<0.05", "%.5f" % g["onestep_l2@1"]["rho"],
+        rows.append(("C6 pointwise L2 floor", "rho<0.05", "%.5f" % g["onestep_l2@1"]["rho"],
                      "%.5f" % g["onestep_l2@1"]["rho_std"], n,
                      ratios(0.05 - g["onestep_l2@1"]["rho"], g["onestep_l2@1"]["rho_std"])))
-        rows.append(("C7 min-of-M 逃逸", "ρ>0.20", "%.4f" % g["onestep_minM@1"]["rho"],
+        rows.append(("C7 min-of-M escape", "rho>0.20", "%.4f" % g["onestep_minM@1"]["rho"],
                      "%.5f" % g["onestep_minM@1"]["rho_std"], n,
                      ratios(g["onestep_minM@1"]["rho"] - 0.20, g["onestep_minM@1"]["rho_std"])))
 
-    lines = ["| 判据 | 阈值（方向） | 观测（5 种子均值） | 种子 σ | 余量/σ |",
+    lines = ["| criterion | threshold (direction) | observed (5-seed mean) | seed sigma | margin/sigma |",
              "|---|---|---|---|---|"]
     for name, thr, obs, sd, n, r in rows:
         lines.append("| %s | %s | %s | %s | %s |" % (name, thr, obs, sd, r))

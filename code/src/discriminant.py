@@ -1,24 +1,31 @@
 # -*- coding: utf-8 -*-
-"""训练前可算的判别量（论文 §4）。**纯 numpy 实现，不依赖 sklearn**。
+"""Discriminants computable before training (paper §4). **Pure numpy, no sklearn**.
 
-（工程备注：Windows + MKL 下 sklearn 的 KMeans 会在多线程环境中卡死，
-因此这里的 k-means / kNN / PCA 全部自己写，顺便把"老方法"复现得更透明。）
+(Engineering note: under Windows + MKL, sklearn's KMeans deadlocks in multi-threaded
+contexts, so the k-means / kNN / PCA here are all written from scratch, which also
+makes the reproduction of the "old method" more transparent.)
 
-两个量，都**只用数据集 (c_i, x_i)，不需要训练任何生成模型**：
+Two quantities, both **using only the dataset (c_i, x_i), without training any
+generative model**:
 
-  D-hat  **未被条件解释的目标方差占比**（"一步生成误差地板"的估计）
-         = 条件均值回归在留出集上的残差方差 / 目标总方差。
-         估计器可换（kNN / RFF-岭回归 / 线性岭），默认 kNN（Cover & Hart, 1967），
-         并用"最近邻配对估计器"做**无回归器**的交叉校验。
+  D-hat  **share of target variance left unexplained by the condition** (estimate of
+         the "one-step generation error floor")
+         = residual variance of conditional-mean regression on a held-out set /
+           total target variance.
+         Estimator is swappable (kNN / RFF-ridge / linear ridge), default kNN
+         (Cover & Hart, 1967), with a "nearest-neighbor pairing estimator" for
+         **regressor-free** cross-validation.
 
-  Lam-hat **不可解释部分（残差）的模态分离度**
-         对残差 r = x - m_hat(c) 做 k-means（Lloyd, 1982 / MacQueen, 1967），
-         簇数由 Calinski-Harabasz 准则（1974）在 1..Kmax 中选；
-         Lam = 最近的两个簇心距离 / (2 × 池化簇内标准差)；单簇时定义为 0。
+  Lam-hat **modal separation of the unexplained (residual) part**
+          k-means (Lloyd, 1982 / MacQueen, 1967) on the residual r = x - m_hat(c);
+          number of clusters chosen by Calinski-Harabasz criterion (1974) over 1..Kmax;
+          Lam = distance of the two nearest cluster centers / (2 × pooled within-cluster
+          std); defined as 0 for a single cluster.
 
-两者的分工（论文命题 1 与 §4）：
-  D-hat 决定一步相对多步的**误差地板有多大**；
-  Lam-hat 决定这个地板表现为**丢模态（结构化、灾难性）**还是**模糊（弥散、良性）**。
+Their division of labor (paper Proposition 1 and §4):
+  D-hat  determines how large the **error floor** of one step vs. many steps is;
+  Lam-hat determines whether this floor shows up as **dropped modes (structured,
+         catastrophic)** or **blurring (diffuse, benign)**.
 """
 import numpy as np
 
@@ -28,9 +35,10 @@ def _as2(a):
     return a if a.ndim > 1 else a.reshape(-1, 1)
 
 
-# ------------------------------------------------------------ 基础件
+# ------------------------------------------------------------ building blocks
 def knn_predict(Ctr, Xtr, Cq, k=10, chunk=256, eps=1e-8):
-    """k 近邻回归（距离加权），分块计算避免大矩阵。"""
+    """k-nearest-neighbor regression (distance-weighted), chunked to avoid large
+    matrices."""
     Ctr, Xtr, Cq = _as2(Ctr), _as2(Xtr), _as2(Cq)
     n, d = Xtr.shape
     k = min(k, max(1, n - 1))
@@ -46,7 +54,7 @@ def knn_predict(Ctr, Xtr, Cq, k=10, chunk=256, eps=1e-8):
 
 
 def kmeans_lloyd(X, K, n_init=5, iters=50, seed=0):
-    """Lloyd 迭代 + k-means++ 初始化。返回 (centers, labels, inertia)。"""
+    """Lloyd iterations + k-means++ initialization. Returns (centers, labels, inertia)."""
     X = _as2(X)
     n = len(X)
     if K >= n:
@@ -101,7 +109,7 @@ def calinski_harabasz(X, lab):
 
 
 def pca_project(X, n_comp=16, fit_on=None):
-    """返回 (低维表示, 均值, 投影矩阵)。"""
+    """Returns (low-dim representation, mean, projection matrix)."""
     X = _as2(X)
     base = X if fit_on is None else _as2(fit_on)
     mu = base.mean(0)
@@ -129,10 +137,10 @@ def rff_features(C, n_comp=256, gamma=None, seed=0):
     return np.sqrt(2.0 / n_comp) * np.cos(C @ W + b)
 
 
-# ------------------------------------------------------------ 判别量
+# ------------------------------------------------------------ discriminants
 def fit_conditional_mean(Ctr, Xtr, estimator="knn", k=10, n_rff=256,
                          alpha=1.0, seed=0):
-    """拟合 E[x|c]，返回 predict(C)。默认 kNN（Cover & Hart, 1967）。"""
+    """Fit E[x|c], return predict(C). Default kNN (Cover & Hart, 1967)."""
     Ctr, Xtr = _as2(Ctr), _as2(Xtr)
     mu_c, sd_c = Ctr.mean(0), Ctr.std(0) + 1e-8
     Ztr = (Ctr - mu_c) / sd_c
@@ -172,14 +180,15 @@ def d_hat_from_predictor(pred, Cte, Xte, var_total=None):
 
 
 def d_hat_pair(C, X, k=1, chunk=512):
-    """无回归器的交叉校验：最近邻配对估计器。
+    """Regressor-free cross-validation: nearest-neighbor pairing estimator.
 
-    E||x_i - x_nn(i)||^2 ≈ 2 tr Var(x|c)（邻域收缩时偏差趋于 0），
-    故 D_pair = mean(d^2) / (2 tr Var(x))。
+    E||x_i - x_nn(i)||^2 ≈ 2 tr Var(x|c) (bias → 0 as neighborhoods shrink),
+    so D_pair = mean(d^2) / (2 tr Var(x)).
     """
     C, X = _as2(C), _as2(X)
-    # 条件的各维量纲可能完全不同（例如图像像素与 one-hot 标签）。
-    # 最近邻搜索前必须标准化；否则数值范围最大的维度会独占距离。
+    # The condition's dimensions may have completely different scales (e.g. image
+    # pixels vs. one-hot labels). Must standardize before nearest-neighbor search;
+    # otherwise the dimension with the largest numerical range dominates the distance.
     C = (C - C.mean(axis=0)) / (C.std(axis=0) + 1e-8)
     n = len(C)
     tot = np.empty(n)
@@ -187,7 +196,7 @@ def d_hat_pair(C, X, k=1, chunk=512):
         e = min(s + chunk, n)
         d2 = ((C[s:e, None, :] - C[None, :, :]) ** 2).sum(-1)
         for i in range(e - s):
-            d2[i, s + i] = np.inf          # 排除自身
+            d2[i, s + i] = np.inf          # exclude self
         nb = d2.argmin(1)
         tot[s:e] = ((X[s:e] - X[nb]) ** 2).sum(-1)
     var_total = X.var(axis=0).sum() + 1e-12
@@ -195,7 +204,8 @@ def d_hat_pair(C, X, k=1, chunk=512):
 
 
 def _lam_of(Rr, K, seed):
-    """给定簇数 K，计算分离度 Lam = 最近簇心距 / (2 × 池化簇内标准差)。"""
+    """Given cluster count K, compute separation Lam = nearest-center distance /
+    (2 × pooled within-cluster std)."""
     if K < 2:
         return 0.0, None
     C, lab, _ = kmeans_lloyd(Rr, K, n_init=3, iters=30, seed=seed)
@@ -205,15 +215,17 @@ def _lam_of(Rr, K, seed):
     for i in range(K):
         for j in range(i + 1, K):
             dmin = min(dmin, np.linalg.norm(C[i] - C[j]))
-    # “池化簇内方差”要按样本数加权。逐簇等权平均会让很小的簇获得与大簇
-    # 相同的权重，从而在人为切出小簇时系统性扭曲 Lambda。
+    # "Pooled within-cluster variance" must be weighted by sample count. Averaging
+    # clusters with equal weight would give a tiny cluster the same weight as a large
+    # one, systematically distorting Lambda when a small cluster is artificially cut.
     within = ((Rr - C[lab]) ** 2).sum(axis=1).mean()
     sbar = np.sqrt(max(within, 1e-12) / Rr.shape[1])
     return float(dmin / (2 * sbar)), (C, lab)
 
 
 def _best_K_by_ch(Rr, kmax, seed, n_init=2, iters=30):
-    """返回 K>=2 的最佳 CH 候选及其分数；没有有效候选时返回 (1, 0)。"""
+    """Return the best CH candidate with K>=2 and its score; return (1, 0) when no
+    valid candidate exists."""
     kmax = max(1, min(kmax, len(Rr) // 20))
     best_score, best_K = 0.0, 1
     for K in range(2, kmax + 1):
@@ -227,11 +239,14 @@ def _best_K_by_ch(Rr, kmax, seed, n_init=2, iters=30):
 
 
 def _select_K(Rr, kmax, seed, n_null=99, alpha=0.05):
-    """用“最大 CH 分数”的高斯零假设检验在 K=1 与 K>=2 之间选择。
+    """Select between K=1 and K>=2 using a Gaussian null test on the "maximum CH
+    score".
 
-    只在 K=2..Kmax 中取最大 CH 会必然返回多簇，旧实现所谓的 K=1 实际上
-    永远不可选。本实现把“搜索过多个 K”也包含进零假设：每个高斯自助样本
-    同样搜索全部 K，观测最大分数超过 (1-alpha) 分位数时才接受多峰模型。
+    Taking the max CH over K=2..Kmax inevitably returns multiple clusters, so the
+    old implementation's apparent K=1 was in fact never selectable. This
+    implementation includes "searching over several K" in the null too: each Gaussian
+    bootstrap sample searches the full K range, and the observed max score is accepted
+    as multimodal only when it exceeds the (1-alpha) quantile.
     """
     best_K, observed = _best_K_by_ch(Rr, kmax, seed)
     if best_K == 1 or n_null < 1:
@@ -248,7 +263,7 @@ def _select_K(Rr, kmax, seed, n_null=99, alpha=0.05):
 
 
 def _gaussian_null(Rr, n, rng):
-    """与给定样本二阶矩匹配的高斯样本（单峰零假设）。"""
+    """Gaussian sample matching the given sample's second moments (unimodal null)."""
     mu = Rr.mean(0)
     cov = np.cov(Rr.T) + 1e-10 * np.eye(Rr.shape[1])
     if Rr.shape[0] < 2:
@@ -262,15 +277,17 @@ def _gaussian_null(Rr, n, rng):
 
 def conditional_mode_separation(C, X, n_anchor=48, n_nb=150, kmax=8, seed=0,
                                 pca_dim=16, n_null=99):
-    """**条件分布**的模态分离度（核心口径）。
+    """Modal separation of the **conditional distribution** (core protocol).
 
-    做法：在数据里取 A 个锚点上下文，每个锚点取条件空间中的 n_nb 个近邻，
-    对这 n_nb 个**原始目标样本**做聚类（不需要减条件均值，因此不会引入
-    回归器噪声），用 Calinski-Harabasz 选簇数，算
-        Lam_a = 最近的两个簇心距离 / (2 × 池化簇内标准差)
-    并对**同协方差单峰高斯零假设**做参数化自助，得到 null 基线。
+    Method: take A anchor contexts in the data, for each anchor take n_nb nearest
+    neighbors in the condition space, cluster these n_nb **original target samples**
+    (no conditional-mean subtraction needed, so no regressor noise is introduced),
+    choose the cluster count by Calinski-Harabasz, and compute
+        Lam_a = distance of the two nearest cluster centers / (2 × pooled within-cluster std)
+    with a null baseline from a parametric bootstrap against the **same-covariance
+    unimodal Gaussian null**.
 
-    返回 (Lam_hat, Lam_null, Lam_p95, frac_multi, K_mean)
+    Returns (Lam_hat, Lam_null, Lam_p95, frac_multi, K_mean)
     """
     C, X = _as2(C), _as2(X)
     n = len(C)
@@ -285,7 +302,8 @@ def conditional_mode_separation(C, X, n_anchor=48, n_nb=150, kmax=8, seed=0,
         d2 = ((C[a][None, :] - C) ** 2).sum(-1)
         nb = np.argpartition(d2, n_nb - 1)[:n_nb]
         Z = Xr[nb]
-        # K=1 必须由含模型选择步骤的零假设检验得到，而不是只比较 K>=2 的 CH。
+        # K=1 must come from a null test that includes the model-selection step,
+        # not from merely comparing K>=2 CH.
         K = _select_K(Z, kmax, seed + int(a), n_null=n_null)
         if K < 2:
             lams.append(0.0)
@@ -297,15 +315,16 @@ def conditional_mode_separation(C, X, n_anchor=48, n_nb=150, kmax=8, seed=0,
         nl = []
         for b in range(n_null):
             Zn = _gaussian_null(Z, len(Z), np.random.default_rng(seed + 7919 * (int(a) + 1) + b))
-            # K 的选择显著性已由 _select_K 用“最大 CH”零假设校正；这里在已接受的
-            # K 上校准 Lambda 的尺度，避免再嵌套一层极昂贵的自助检验。
+            # The significance of choosing K is already corrected by _select_K via the
+            # "max CH" null; here we calibrate Lambda's scale at the accepted K to avoid
+            # nesting yet another extremely expensive bootstrap test.
             ln, _ = _lam_of(Zn, K, seed + 130363 * (int(a) + 1) + b)
             nl.append(ln)
         nl = np.array([v for v in nl if v is not None])
         lams.append(lam)
         nulls.append(float(nl.mean()) if len(nl) else 0.0)
         ks.append(K)
-        multi.append(1.0)  # K>=2 已通过含多重 K 搜索的 5% 零假设检验
+        multi.append(1.0)  # K>=2 already passed the 5% null test that includes multi-K search
     return (float(np.mean(lams)), float(np.mean(nulls)),
             float(np.mean(multi)), float(np.mean(ks)),
             np.array(lams), np.array(nulls))
@@ -313,19 +332,20 @@ def conditional_mode_separation(C, X, n_anchor=48, n_nb=150, kmax=8, seed=0,
 
 def residual_mode_separation(R, kmax=10, seed=0, min_size=20, pca_dim=16,
                              n_null=20):
-    """残差的多模态性与分离度。
+    """Multimodality and separation of the residual.
 
-    返回 (Lam, K_star, Lam_null_mean, Lam_null_p95, multimodal):
-      K_star 由 Calinski-Harabasz 准则在 1..kmax 中选择（K=1 时 Lam=0）；
-      Lam_null_* 是**参数化自助零假设**（与残差同协方差的各向同性高斯）下的
-      同统计量分布，用于判定"这个分离度是否超出单峰噪声能产生的范围"。
+    Returns (Lam, K_star, Lam_null_mean, Lam_null_p95, multimodal):
+      K_star chosen by Calinski-Harabasz over 1..kmax (Lam=0 for K=1);
+      Lam_null_* is the distribution of the same statistic under the **parametric
+      bootstrap null** (isotropic Gaussian matching the residual's covariance), used
+      to judge "whether this separation exceeds what unimodal noise can produce".
     """
     R = _as2(R)
     n, d = R.shape
     if n < 4 * min_size:
         return 0.0, 1, 0.0, 0.0, False
     Rr = R
-    if d > pca_dim:                      # 高维时先投到主子空间（模态结构通常低维）
+    if d > pca_dim:                      # project to principal subspace first if high-dim
         Rr, _, _ = pca_project(R, n_comp=pca_dim)
     kmax = max(1, min(kmax, n // min_size))
     best_score, best_K = 0.0, 1
@@ -339,7 +359,7 @@ def residual_mode_separation(R, kmax=10, seed=0, min_size=20, pca_dim=16,
     if best_K == 1:
         return 0.0, 1, 0.0, 0.0, False
     Lam, _ = _lam_of(Rr, best_K, seed)
-    # 零假设：与残差二阶矩匹配的单峰高斯
+    # Null: unimodal Gaussian matching the residual's second moments
     rng = np.random.default_rng(seed + 12345)
     mu = Rr.mean(0)
     cov = np.cov(Rr.T) + 1e-10 * np.eye(Rr.shape[1])
@@ -358,7 +378,8 @@ def residual_mode_separation(R, kmax=10, seed=0, min_size=20, pca_dim=16,
 
 
 def marginal_separation(X, kmax=10, seed=0, min_size=20, pca_dim=16):
-    """对照量：目标**边际**的簇间方差占比（完全不考虑条件）。"""
+    """Control quantity: between-cluster variance share of the target **marginal**
+    (condition ignored entirely)."""
     X = _as2(X)
     n, d = X.shape
     Xr = X
@@ -377,8 +398,9 @@ def marginal_separation(X, kmax=10, seed=0, min_size=20, pca_dim=16):
         return 0.0, 1
     C, lab = best
     within = ((Xr - C[lab]) ** 2).sum(axis=1).mean()
-    # within 已经对所有坐标求和，total 也只应把逐维方差求和一次。
-    # 旧代码额外乘以维度，使高维数据的分离度虚高并破坏对照实验。
+    # within already sums over all coordinates, so total should also sum the per-dim
+    # variance exactly once. The old code additionally multiplied by the dimension,
+    # artificially inflating separation for high-dim data and breaking the control.
     total = Xr.var(axis=0).sum() + 1e-12
     return float(np.clip(1.0 - within / total, 0.0, 1.0)), int(best_K)
 
@@ -386,19 +408,24 @@ def marginal_separation(X, kmax=10, seed=0, min_size=20, pca_dim=16):
 def compute_discriminant(Ctr, Xtr, Cte, Xte, estimator="knn", k=10, kmax=10,
                          seed=0, n_rff=256, alpha=1.0, with_competitors=True,
                          k_list=(10, 25, 50)):
-    """判别量 + 一组对照预测因子（供论文表 2 的秩相关比较）。
+    """Discriminant + a set of competitor predictors (for the rank-correlation
+    comparison in paper Table 2).
 
-    估计器口径（重要）：
-      D 的本质是"**最优**条件均值回归的残差方差占比"，它是 Var(x|c)/Var(x) ∈ [0,1]。
-      但任何**有限样本**回归器都会把自己的估计方差 Var(m_hat) 掺进残差，于是
-      D_hat ≈ D + Var(m_hat)/Var(x)。最直白的是 kNN：残差里含 ≈ 1/k_eff 的
-      估计噪声，**会让 D_hat 突破理论上界 1**。实测 K=1（条件完全无信息，
-      闭式 D 恰为 1.000）时 kNN(k=10) 给出 1.143 —— 这是正的 14% 偏差。
+    Estimator protocol (important):
+      The essence of D is "residual variance share of the **optimal** conditional-mean
+      regression", which is Var(x|c)/Var(x) ∈ [0,1]. But any **finite-sample** regressor
+      mixes in its own estimation variance Var(m_hat), so
+      D_hat ≈ D + Var(m_hat)/Var(x). The most direct case is kNN: the residual contains
+      ≈ 1/k_eff of estimation noise, **pushing D_hat above the theoretical upper bound 1**.
+      Measured: with K=1 (condition carries no information, the closed-form D is exactly
+      1.000), kNN(k=10) gives 1.143 — a +14% positive bias.
 
-      固定 k 的 kNN、固定特征数的 RFF 和线性模型都不能笼统称为“一致估计器”。
-      这里用训练集内部的验证划分选择一个候选，再在独立测试集上报告 D_hat。
-      这样测试集只承担一次最终评估，避免旧实现“在同一测试集上取五个风险
-      的最小值”造成的乐观选择偏差。各候选的测试风险仍保留供诊断。
+      Fixed-k kNN, fixed-feature-count RFF, and linear models cannot all be loosely
+      called "consistent estimators". Here we use an internal validation split on the
+      training set to pick one candidate, then report D_hat on an independent test set.
+      This way the test set bears only a single final evaluation, avoiding the optimistic
+      selection bias of the old implementation which "took the minimum of five risks on
+      the same test set". Each candidate's test risk is still retained for diagnostics.
     """
     Ctr, Xtr, Cte, Xte = _as2(Ctr), _as2(Xtr), _as2(Cte), _as2(Xte)
     var_total = float(Xte.var(axis=0).sum() + 1e-12)
