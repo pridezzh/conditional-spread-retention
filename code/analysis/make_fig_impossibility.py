@@ -5,8 +5,8 @@
 
   (a) **α-扫描**：让 ρ 精确扫描 [0,1]，而 D̂ 与 Λ̂ 全程不动。
       —— 这是"任何只看数据的统计量都判定不了一步"的正面证据。
-  (b) **跨方法族失效地图**：ρ 只取两个值（≈0 或 ≈0.9–0.97），**中间没有过渡**。
-      —— 这是"没有中间地带"的实证。
+  (b) **跨方法族对照**：报告各受控实现的 ρ 及跨种子标准差。
+      —— 这些点是有限的方法样本，不支持“没有中间地带”的普遍结论。
 
 数据来源（全部读 JSON，不重跑实验）
   logs/verify_impossibility.json
@@ -71,9 +71,20 @@ def main():
     D = np.array(cv["D"], dtype=float)
     lam = np.array(cv["Lambda"], dtype=float)
 
-    ax.plot(a, rho, "o-", color=BLUE, label=r"measured $\hat\rho$ (one-step)", zorder=3)
+    rho_by_alpha = []
+    k0 = str(imp["params"]["KNN_K"][0])
+    for alpha in a:
+        vals = []
+        for rows in imp.get("per_seed", {}).values():
+            row = next(r for r in rows if abs(float(r["alpha"]) - alpha) < 1e-12)
+            vals.append(float(row["rho"][k0]))
+        rho_by_alpha.append(vals)
+    rho_sd = np.array([np.std(v, ddof=1) if len(v) > 1 else 0.0
+                       for v in rho_by_alpha])
+    ax.errorbar(a, rho, yerr=rho_sd, fmt="o-", capsize=2.5, color=BLUE,
+                label=r"measured $\hat\rho$ (mean $\pm$ SD)", zorder=3)
     ax.plot(a, pred, "--", color=CORAL, linewidth=1.2,
-            label=r"analytic $\alpha^2+(1-\alpha)^2/k$", zorder=2)
+            label=r"analytic $\alpha^2+(1-\alpha^2)/k$", zorder=2)
     ax.plot(a, a ** 2, ":", color=GRAY, linewidth=1.2,
             label=r"population $\rho^*=\alpha^2$", zorder=2)
     ax.set_xlabel(r"coupling interpolation $\alpha$  (0 = independent, 1 = transport)")
@@ -100,25 +111,27 @@ def main():
              ("onestep_minM@1", "1-step\nmin-of-8"), ("cfm_ot@1", "OT-FM\nNFE=1"),
              ("reflow@1", "reflow\nNFE=1"), ("distill@1", "consistency\nNFE=1"),
              ("cfm_indep@32", "indep\nNFE=32")]
-    labels, vals, cols = [], [], []
+    labels, vals, errs, cols = [], [], [], []
     for key, lab in order:
         s = mm["summary"][key]
         labels.append(lab)
         vals.append(s["rho"])
+        errs.append(s.get("rho_std", 0.0))
         cols.append(CORAL if s["rho"] < 0.3 else BLUE)
     if chamfer is not None:
         labels.append("1-step\nChamfer")
         vals.append(chamfer["summary"]["rho"])
+        errs.append(chamfer["summary"].get("rho_std", 0.0))
         cols.append(BLUE)
     y = np.arange(len(labels))
-    ax.barh(y, vals, color=cols, height=0.62)
+    ax.barh(y, vals, xerr=errs, color=cols, height=0.62, capsize=2)
     ax.set_yticks(y)
     ax.set_yticklabels(labels, fontsize=6.5)
     ax.set_xlabel(r"realized conditional spread ratio  $\hat\rho$")
-    ax.set_xlim(0, 1.08)
+    ax.set_xlim(0, max(1.08, max(v + e for v, e in zip(vals, errs)) + 0.10))
     for i, v in enumerate(vals):
         ax.text(v + 0.02, i, "%.3f" % v, va="center", fontsize=6.5)
-    ax.set_title(r"(b)  one-step $\hat\rho$: two regimes, no middle ground", fontsize=9)
+    ax.set_title(r"(b)  controlled method comparison", fontsize=9)
 
     fig.tight_layout()
     outdir = os.path.join(ROOT, "figures")

@@ -110,5 +110,19 @@
       ]
     }
   },
-  "passes_C7": true
+  "passes_C7": true,
+  "result_schema_version": "single-step-coupling-v3",
+  "provenance": {
+    "generated_at_utc": "2026-09-17T08:25:30.933228+00:00",
+    "generator": "code/experiments/run_chamfer_supplement.py",
+    "protocol_id": "21d8934b29a3da1c70369c26dfcb73356654c0c9a8a36421135dee937c27ee9e",
+    "source_sha256": {
+      "code/experiments/run_chamfer_supplement.py": "3d22dd8013355202c47d07f05264b728c0dc271fb2f04f4e08e58d81d0d28829",
+      "code/experiments/run_method_map.py": "af37b7abc3bc2767a466a7efac9c365c937b3877a2845b771845f49b26b0b553",
+      "code/src/provenance.py": "11e373a4f8c46e5298bc5afc4f33127b8bd50af15f007128cddc43be01324046"
+    },
+    "python": "3.10.21",
+    "platform": "Windows-10-10.0.26100-SP0",
+    "merged_seed_cache": true
+  }
 }

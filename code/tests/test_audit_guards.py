@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """针对本次科学校核发现的问题做最小回归测试。"""
 import os
+import json
 import sys
 import unittest
 
@@ -8,9 +9,13 @@ import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "src"))
+sys.path.insert(0, os.path.join(os.path.dirname(HERE), "analysis"))
 
 from discriminant import _lam_of, _select_K, marginal_separation  # noqa: E402
 from metrics import conditional_reference_samples  # noqa: E402
+from verify_impossibility import knn_variance_ratio  # noqa: E402
+from provenance import (RESULT_SCHEMA_VERSION, protocol_fingerprint,
+                        require_merge_compatible)  # noqa: E402
 
 
 class DiscriminantAuditTests(unittest.TestCase):
@@ -62,6 +67,57 @@ class ConditionalMetricAuditTests(unittest.TestCase):
         self.assertAlmostEqual(one_pass.mean(), 0.0, places=12)
         self.assertGreater(one_pass.var(), 3.9)
         self.assertEqual(set(np.unique(one_pass)), {-2.0, 2.0})
+
+    def test_dependence_does_not_imply_nonzero_conditional_mean(self):
+        """依赖耦合也可均值独立；所以“非独立 iff 不塌缩”不成立。"""
+        x0 = np.repeat(np.array([0.5, 1.0, 2.0, 3.0]), 2)
+        sign = np.tile(np.array([-1.0, 1.0]), 4)
+        x1 = sign * np.abs(x0)
+        conditional_means = x1.reshape(-1, 2).mean(axis=1)
+        conditional_second_moments = (x1 ** 2).reshape(-1, 2).mean(axis=1)
+        self.assertTrue(np.allclose(conditional_means, 0.0))
+        self.assertGreater(np.ptp(conditional_second_moments), 8.0)
+
+    def test_knn_variance_correction_uses_total_variance(self):
+        """Bernoulli 混合耦合的残差比例是 1-alpha^2。"""
+        self.assertAlmostEqual(knn_variance_ratio(0.5, 20), 0.2875)
+        self.assertAlmostEqual(knn_variance_ratio(0.0, 20), 0.05)
+        self.assertAlmostEqual(knn_variance_ratio(1.0, 20), 1.0)
+
+
+class ResultIntegrityTests(unittest.TestCase):
+    def test_legacy_or_cross_revision_merge_is_rejected(self):
+        """没有 schema/指纹的旧缓存不可再与新种子静默混合。"""
+        with self.assertRaises(RuntimeError):
+            require_merge_compatible({}, "expected", "legacy.json")
+        compatible = {
+            "result_schema_version": RESULT_SCHEMA_VERSION,
+            "provenance": {"protocol_id": "expected"},
+        }
+        require_merge_compatible(compatible, "expected", "current.json")
+
+    def test_protocol_fingerprint_changes_with_source(self):
+        """用于结果合并的协议指纹必须真正依赖源文件内容。"""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "protocol.py")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("VALUE = 1\n")
+            first, _ = protocol_fingerprint(tmp, ["protocol.py"])
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("VALUE = 2\n")
+            second, _ = protocol_fingerprint(tmp, ["protocol.py"])
+        self.assertNotEqual(first, second)
+
+    def test_training_summaries_equal_per_seed_aggregates(self):
+        """表格汇总必须能由逐种子原始值精确重算。"""
+        root = os.path.dirname(os.path.dirname(HERE))
+        path = os.path.join(root, "results", "loss_ladder.json")
+        with open(path, encoding="utf-8") as f:
+            report = json.load(f)
+        for method, stored in report["summary"].items():
+            values = [row[method]["rho"] for row in report["per_seed"].values()]
+            self.assertAlmostEqual(float(np.mean(values)), stored["rho"], places=12)
 
 
 if __name__ == "__main__":

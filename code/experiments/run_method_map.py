@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""跨方法族失效地图：同分布、同架构、同预算，**只改训练目标**。
+"""跨方法族受控对照：同分布、同网络宽深和同单阶段更新数。
 
 --------------------------------------------------------------------
 为什么这个实验是论文的新核心
@@ -11,13 +11,12 @@
 
 本实验不把这些当成"打脸"，而是给出一个**统一解释**并把它变成可测的地图：
 
-    所有"让一步可用"的方法（OT-FM / 重流 / 一致性蒸馏 / IMLE 蒸馏），
-    本质上都是把**独立耦合**换成**近似确定性耦合**。
-    一步能否保持展布，只由耦合决定 —— 与 NFE 计数、与架构都无关。
+    点式 L2 端点回归保留多少条件展布由配对的**均值依赖**决定；
+    集合级损失还提供另一条经验上的逃逸路径。
 
-若这条成立，则六个方法族在"一步"上的表现可以被**一个变量**（耦合是否
-确定）预测，而不是六个互不相干的经验结论。这是可证伪的：只要出现
-"独立耦合却一步保展布"或"确定性耦合却一步塌缩"，即被推翻。
+对逐点 L2 行，精确变量是条件均值依赖，而不是“耦合是否确定”或“是否
+独立”；集合级损失是另一类目标，只作为受控经验对照。因而这张地图用于
+核对实现和边界，不证明一个标量能普遍排序所有一步方法。
 
 --------------------------------------------------------------------
 受控设计
@@ -25,7 +24,8 @@
 数据：C=4 个条件，每条件 K=8 环上等权高斯混合（半径/旋转/平移各不相同，
 使 m(c) 随 c 变化、D 有意义）。闭式 tr Var(x1|j) = R_j^2 + d sigma^2。
 架构：同一个 MLP（输入 [x, t, onehot(c)]，隐层 256×4，输出 2）。
-预算：同样步数、同样批量、同样优化器。
+预算：每个训练阶段使用同样步数、批量与优化器；重流和蒸馏包含额外教师阶段，
+因此这里不是总算力相等的比较。
 差异：**只**在训练目标的耦合 / 损失上。
 
 六个方法族
@@ -40,7 +40,7 @@
 
 判据（全部预先写死，见 CRIT）
 ----------------------------
-  C1 cfm_indep @NFE=1  ：ρ < 0.05 且覆盖模态 = 0        （塌缩）
+  C1 cfm_indep @NFE=1  ：ρ < 0.05 且覆盖模态 <= 1       （近似塌缩）
   C2 cfm_indep @NFE=32 ：ρ > 0.75 且覆盖 >= 7            （多步恢复）
   C3 cfm_ot    @NFE=1  ：ρ > 0.50                        （换耦合即救回）
   C4 reflow    @NFE=1  ：ρ > 0.50 且覆盖 >= 6
@@ -77,6 +77,9 @@ import numpy as np  # noqa: E402
 import torch  # noqa: E402
 import torch.nn as nn  # noqa: E402
 from scipy.optimize import linear_sum_assignment  # noqa: E402
+from provenance import attach_provenance, protocol_fingerprint, require_merge_compatible  # noqa: E402
+
+PROTOCOL_FILES = ["code/experiments/run_method_map.py", "code/src/provenance.py"]
 
 # ---------------------------------------------------------------- 参数
 C, K, SIGMA, DIM = 4, 8, 0.25, 2
@@ -400,10 +403,13 @@ def run_seed(seed):
 def main(new_seeds, merge):
     t0 = time.time()
     out = os.path.join(ROOT, "results", "method_map.json")
+    protocol_id, _ = protocol_fingerprint(ROOT, PROTOCOL_FILES)
     all_res = {}
     if merge and os.path.exists(out):
         with open(out, encoding="utf-8") as f:
-            all_res = dict(json.load(f).get("per_seed", {}))
+            existing = json.load(f)
+        require_merge_compatible(existing, protocol_id, out)
+        all_res = dict(existing.get("per_seed", {}))
         print("merge: 载入既有种子 %s" % sorted(all_res, key=int), flush=True)
     for sd in new_seeds:
         if str(sd) in all_res:
@@ -464,8 +470,10 @@ def main(new_seeds, merge):
     report = dict(params=dict(C=C, K=K, sigma=SIGMA, STEPS=STEPS, BS=BS, LR=LR,
                               HIDDEN=HIDDEN, NLAYER=NLAYER, N_PAIR=N_PAIR,
                               M_MIN=M_MIN, N_EVAL=N_EVAL, seeds=list(seeds_all)),
-                  criteria=CRIT, summary=summary, checks=checks, verdict=verdict,
-                  per_seed=all_res)
+                   criteria=CRIT, summary=summary, checks=checks, verdict=verdict,
+                   per_seed=all_res)
+    attach_provenance(report, ROOT, "code/experiments/run_method_map.py",
+                      PROTOCOL_FILES, merged=merge)
     with open(out, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print("报告已写入 %s" % out)

@@ -66,12 +66,17 @@ def _find_root(d):
 
 ROOT = _find_root(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "code", "experiments"))
+sys.path.insert(0, os.path.join(ROOT, "code", "src"))
 
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
 from scipy.optimize import linear_sum_assignment  # noqa: E402
 
 import run_method_map as M  # noqa: E402
+from provenance import attach_provenance, protocol_fingerprint, require_merge_compatible  # noqa: E402
+
+PROTOCOL_FILES = ["code/experiments/run_loss_ladder.py",
+                  "code/experiments/run_method_map.py", "code/src/provenance.py"]
 
 SEEDS = (0, 1, 2, 3, 4)
 N_PROJ = 256
@@ -243,10 +248,13 @@ def train_balanced(seed, steps=None, tag="onestep_balanced"):
 def main(new_seeds, merge):
     t0 = time.time()
     out = os.path.join(ROOT, "results", "loss_ladder.json")
+    protocol_id, _ = protocol_fingerprint(ROOT, PROTOCOL_FILES)
     out_all = {}
     if merge and os.path.exists(out):
         with open(out, encoding="utf-8") as f:
-            out_all = dict(json.load(f).get("per_seed", {}))
+            existing = json.load(f)
+        require_merge_compatible(existing, protocol_id, out)
+        out_all = dict(existing.get("per_seed", {}))
         print("merge: 载入既有种子 %s" % sorted(out_all, key=int), flush=True)
     for sd in new_seeds:
         if str(sd) in out_all:
@@ -321,6 +329,8 @@ def main(new_seeds, merge):
                               N_PROJ=N_PROJ),
                   tr_var_cond=M.TR_VAR_COND.tolist(),
                   summary=S, checks=checks, verdict=verdict, per_seed=out_all)
+    attach_provenance(report, ROOT, "code/experiments/run_loss_ladder.py",
+                      PROTOCOL_FILES, merged=merge)
     with open(out, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print("报告已写入 %s" % out)

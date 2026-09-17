@@ -1,5 +1,10 @@
 # Reproduction guide
 
+> **Current evidence status:** the shipped five-seed training JSON files predate the
+> provenance schema and combine cached seeds `0,1,2` with rerun seeds `3,4`. Level 1
+> checks deterministic assembly and numerical consistency only. A submission-grade
+> reproduction requires Level 2 without `--merge`, followed by the strict audit.
+
 Two levels: **rebuild the PDF from shipped results** (seconds), and **re-run everything
 from scratch** (~2 h CPU).
 
@@ -10,6 +15,7 @@ from scratch** (~2 h CPU).
 ```bash
 python -m pip install -r requirements.txt
 python code/_run_pipeline.py
+python code/analysis/audit_submission.py --allow-legacy-results
 ```
 
 `_run_pipeline.py` runs five steps in order and stops at the first failure:
@@ -59,10 +65,12 @@ python code/analysis/validate_deficit.py
 python code/analysis/run_falsification.py
 
 python code/_run_pipeline.py                        # rebuild macros, figures, PDF
+python code/analysis/audit_submission.py             # must end in VERDICT: PASS
 ```
 
-All seeds are fixed and passed explicitly, so runs are reproducible on the same
-platform. Small floating-point differences across BLAS builds are expected.
+Run the experiment commands **without `--merge`** so every seed is regenerated from one
+revision. New outputs include a schema version, generator, timestamp and SHA-256 protocol
+fingerprint. Small floating-point differences across BLAS builds are expected.
 
 ---
 
@@ -84,6 +92,11 @@ field the macro reads.
 | L2a pooled row (Table 2, Figure 2) | `experiments/run_chamfer_pooled.py` | `results/chamfer_pooled.json`: `summary`, `tr_var_cond`, `per_seed` |
 | Negative result: `Lambda` sorted ring8 below banana | `analysis/validate_deficit.py` | `logs/validate_deficit.json`: `R6_population`, `R1_ceiling`, `R4_rank_corr` |
 | Pre-registered false-positive stress test | `analysis/run_falsification.py` | `logs/falsification_lambda_stress.json` |
+| MNIST real-data confirmation (Sec. 5.6): couplings (i)-(iv), checks M1-M9 | `experiments/run_mnist_collapse.py` | `results/mnist_collapse.json`: `summary`, `checks`, `per_seed` |
+
+`results/mnist_collapse.json` is rebuilt from scratch when its protocol fingerprint
+changes (`code/src/provenance.py`); merging seeds across revisions is rejected, so
+all ten seeds always come from one frozen code revision.
 
 ---
 
@@ -95,10 +108,11 @@ field the macro reads.
 | Packages | `numpy>=1.26`, `scipy>=1.11`, `torch>=2.2` (CPU), `matplotlib>=3.8` |
 | TeX | any TeX Live with `pdflatex` + `bibtex`; edit `TEXLIVE` in `code/analysis/build_paper.py` if yours is elsewhere |
 | Hardware | CPU only; no GPU required or used |
-| Network | only for `paper/fetch_refs.py` (arXiv metadata). No dataset download: every experiment is on synthetic families with a closed-form ground truth. |
+| Network | only for `paper/fetch_refs.py` (arXiv metadata) and the one-time MNIST download in `code/src/tasks.py` (falls back to scikit-learn digits offline). |
 
-`code/data/` exists only for the archived MNIST protocol under `code/archive/`; it is
-git-ignored, and the reproduction path above never touches it.
+`code/data/mnist_16.npz` is the preprocessed 16x16 MNIST cache used by
+`experiments/run_mnist_collapse.py`; it ships with the repository so the real-data
+experiment reproduces offline.
 
 ---
 

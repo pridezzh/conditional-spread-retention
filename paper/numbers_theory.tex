@@ -8,7 +8,7 @@
 \newcommand{\ImpAlphaSweep}{0.9265}  % rho_hat(1) - rho_hat(0)
 \newcommand{\ImpDDev}{0.002993}  % deviations.max_d_dev
 \newcommand{\ImpLamDev}{0.00028}  % deviations.max_lam_dev
-\newcommand{\ImpPredMad}{0.01405}  % deviations.pred_mad
+\newcommand{\ImpPredMad}{0.007836}  % deviations.pred_mad
 \newcommand{\ImpKnnK}{20}  % params.KNN_K[0]
 \newcommand{\ImpSeeds}{3}  % params.seeds
 \newcommand{\ImpAlphas}{5}  % params.alphas
@@ -163,6 +163,25 @@
 \newcommand{\LLChamferPooledAbsErr}{0.4331}  % chamfer_pooled: summary.rho_abs_err
 \newcommand{\LLChamferPooledCsw}{0.3973}  % chamfer_pooled: summary.csw
 \newcommand{\LLChamferPooledGenCV}{0.12}  % chamfer_pooled: CV over j of generated trVar_j
+\newcommand{\MnistADcor}{0.02862}  % mnist_collapse: summary.A_independent.dcor.mean
+\newcommand{\MnistARhoTr}{0.01519}  % mnist_collapse: summary.A_independent.rho_trained.mean
+\newcommand{\MnistACsw}{0.232}  % mnist_collapse: summary.A_independent.csw1.mean
+\newcommand{\MnistBDcor}{0.1538}  % mnist_collapse: summary.B_dependent_meandep0.dcor.mean
+\newcommand{\MnistBRhoTr}{0.01358}  % mnist_collapse: summary.B_dependent_meandep0.rho_trained.mean
+\newcommand{\MnistBCsw}{0.2616}  % mnist_collapse: summary.B_dependent_meandep0.csw1.mean
+\newcommand{\MnistCDcor}{0.2774}  % mnist_collapse: summary.C_ot.dcor.mean
+\newcommand{\MnistCRhoTr}{0.3319}  % mnist_collapse: summary.C_ot.rho_trained.mean
+\newcommand{\MnistCCsw}{0.114}  % mnist_collapse: summary.C_ot.csw1.mean
+\newcommand{\MnistDDcor}{0.1901}  % mnist_collapse: summary.D_sorted_meanmax.dcor.mean
+\newcommand{\MnistDRhoTr}{0.182}  % mnist_collapse: summary.D_sorted_meanmax.rho_trained.mean
+\newcommand{\MnistDCsw}{0.1742}  % mnist_collapse: summary.D_sorted_meanmax.csw1.mean
+\newcommand{\MnistAMuErr}{0.04308}  % mnist_collapse: summary.A_independent.mu_err.mean
+\newcommand{\MnistBMuErr}{0.04751}  % mnist_collapse: summary.B_dependent_meandep0.mu_err.mean
+\newcommand{\MnistNSeeds}{10}  % mnist_collapse: len(per_seed)
+\newcommand{\MnistMaxStd}{0.01829}  % mnist_collapse: max summary std over rho_trained/csw1/dcor
+\newcommand{\MnistMaxStdOf}{A-independent, dcor}  % mnist_collapse: which quantity has the max std
+\newcommand{\MnistCSeconds}{61.1}  % mnist_collapse: mean per-seed seconds of C_ot
+\newcommand{\MnistDSeconds}{21.6}  % mnist_collapse: mean per-seed seconds of D_sorted_meanmax
 \newcommand{\LamGauss}{\ensuremath{2.215\times 10^{-5}}}  % validate_deficit: R6_population.gauss
 \newcommand{\LamRingEight}{0.09003}  % validate_deficit: R6_population.ring8
 \newcommand{\LamBanana}{0.2257}  % validate_deficit: R6_population.banana

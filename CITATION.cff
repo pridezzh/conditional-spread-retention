@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this code, please cite the accompanying paper."
-title: "Whether One Step Is Enough Is Not Determined by the Data: Coupling, Loss Form, and an Impossibility Theorem"
+title: "When Does One-Step Endpoint Regression Preserve Conditional Spread? Coupling, Mean Dependence, and Data-Side Non-Identifiability"
 abstract: >-
   Code and raw results for a study of when a one-step generative policy suffices.
   The paper defines the realised conditional-spread ratio rho, proves that rho of

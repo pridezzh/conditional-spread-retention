@@ -5,10 +5,17 @@ __pycache__/
 .venv/
 venv/
 
-# ---- Data (downloaded automatically on first run) ----
-code/data/
-*.npz
+# ---- Data (raw MNIST archives are downloaded automatically on first run;
+#      the preprocessed cache code/data/mnist_16.npz IS tracked on purpose) ----
 *-ubyte.gz
+
+# ---- Not shipped: regenerated locally by the pipeline ----
+paper/main.pdf
+paper/main.bbl
+paper/refs_raw.json
+figures/*.png
+logs/*.log
+code/archive/
 
 # ---- LaTeX build artifacts ----
 paper/*.aux

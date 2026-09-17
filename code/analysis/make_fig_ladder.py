@@ -2,7 +2,7 @@
 """损失阶梯图（论文图 2）。
 
 左面板是这张图的全部要点：**生成的逐条件展布 vs 真实的逐条件展布**。
-  * 落在对角线上  = 恢复了条件律；
+  * 落在对角线上  = 恢复了逐条件总方差（不等于恢复完整条件律）；
   * 压成一条**水平线** = 只恢复了支撑集、跨条件权重是错的；
   * 缩到原点      = 塌缩。
 
@@ -90,17 +90,17 @@ def main():
     lo = 0.0
     hi = float(tv.max()) * 1.25
     ax.plot([lo, hi], [lo, hi], "k--", lw=1.0, zorder=1,
-            label="correct conditional law")
+            label="matched conditional total variance")
     for src, key, label, col, mk in usable:
         gen = [_per_cond(src, key, sd) * tv for sd in seeds]
         gen = np.array(gen)                       # (n_seed, C)
         mu = gen.mean(0)
-        se = gen.std(0, ddof=1) / np.sqrt(len(seeds))
-        ax.errorbar(tv, mu, yerr=se, fmt=mk + "-", color=col, ms=6, lw=1.6,
+        sd = gen.std(0, ddof=1)
+        ax.errorbar(tv, mu, yerr=sd, fmt=mk + "-", color=col, ms=6, lw=1.6,
                     capsize=3, label=label, zorder=3)
     ax.set_xlabel(r"true conditional spread  $\mathrm{tr}\,\mathrm{Var}(x_1\mid c_j)$")
     ax.set_ylabel(r"generated  $\mathrm{tr}\,\mathrm{Var}(f(x_0,c_j)\mid c_j)$")
-    ax.set_title(r"(a)  per-condition spread:  where the matching happens decides",
+    ax.set_title(r"(a)  per-condition spread in the controlled ring task",
                  fontsize=9.5)
     ax.legend(fontsize=7.0, loc="upper left", framealpha=0.9)
     ax.set_xlim(lo, hi)
@@ -113,13 +113,20 @@ def main():
     csw = [_summary(s, k)["csw"] for s, k, _, _, _ in usable]
     csw_e = [_summary(s, k)["csw_std"] for s, k, _, _, _ in usable]
     err = [_summary(s, k)["rho_abs_err"] for s, k, _, _, _ in usable]
+    err_e = []
+    for src, key, _, _, _ in usable:
+        vals = []
+        for sd in seeds:
+            rj = _per_cond(src, key, sd)
+            vals.append(float(np.abs(rj - 1.0).mean()))
+        err_e.append(float(np.std(vals, ddof=1)))
     cols = [m[3] for m in usable]
     x = np.arange(len(usable))
     w = 0.36
     b1 = ax.bar(x - w / 2, csw, w, yerr=csw_e, color=cols, alpha=0.95,
                 capsize=3, label=r"cSW (conditional sliced $W_2$, $\downarrow$)")
-    b2 = ax.bar(x + w / 2, err, w, color=cols, alpha=0.45, hatch="//",
-                label=r"mean $|\rho_j-1|$ ($\downarrow$)")
+    b2 = ax.bar(x + w / 2, err, w, yerr=err_e, color=cols, alpha=0.45,
+                hatch="//", capsize=3, label=r"mean $|\rho_j-1|$ ($\downarrow$)")
     for b, v in zip(b1, csw):
         ax.text(b.get_x() + b.get_width() / 2, v + 0.02, "%.3f" % v,
                 ha="center", fontsize=7.5)

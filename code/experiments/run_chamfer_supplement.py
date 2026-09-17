@@ -54,6 +54,11 @@ import numpy as np  # noqa: E402
 import torch  # noqa: E402
 
 import run_method_map as M  # noqa: E402
+from provenance import (attach_provenance, protocol_fingerprint,  # noqa: E402
+                        require_merge_compatible)
+
+PROTOCOL_FILES = ["code/experiments/run_chamfer_supplement.py",
+                  "code/experiments/run_method_map.py", "code/src/provenance.py"]
 
 SEEDS = (0, 1, 2, 3, 4)
 
@@ -115,10 +120,13 @@ def train_chamfer(sample_fn, seed, steps=None, bs=None, lr=M.LR, tag="chamfer"):
 def main(new_seeds, merge):
     t0 = time.time()
     out = os.path.join(ROOT, "results", "method_map_chamfer.json")
+    protocol_id, _ = protocol_fingerprint(ROOT, PROTOCOL_FILES)
     out_all = {}
     if merge and os.path.exists(out):
         with open(out, encoding="utf-8") as f:
-            out_all = dict(json.load(f).get("per_seed", {}))
+            existing = json.load(f)
+        require_merge_compatible(existing, protocol_id, out)
+        out_all = dict(existing.get("per_seed", {}))
         print("merge: 载入既有种子 %s" % sorted(out_all, key=int), flush=True)
     for sd in new_seeds:
         if str(sd) in out_all:
@@ -159,6 +167,8 @@ def main(new_seeds, merge):
                             ("C7_MINM_N1_RHO_MIN", "C7_MINM_N1_COV_MIN")},
                   summary=summary, per_seed=out_all,
                   passes_C7=bool(ok))
+    attach_provenance(report, ROOT, "code/experiments/run_chamfer_supplement.py",
+                      PROTOCOL_FILES, merged=merge)
     with open(out, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print("报告已写入 %s" % out)

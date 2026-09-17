@@ -795,5 +795,18 @@
         }
       }
     }
+  },
+  "result_schema_version": "single-step-coupling-v3",
+  "provenance": {
+    "generated_at_utc": "2026-09-17T08:09:48.029120+00:00",
+    "generator": "code/experiments/run_method_map.py",
+    "protocol_id": "b20a3335a562f50e53ba53abc2fae0eb3cdd539fad237b80bed2aee1f2ea9bb4",
+    "source_sha256": {
+      "code/experiments/run_method_map.py": "af37b7abc3bc2767a466a7efac9c365c937b3877a2845b771845f49b26b0b553",
+      "code/src/provenance.py": "11e373a4f8c46e5298bc5afc4f33127b8bd50af15f007128cddc43be01324046"
+    },
+    "python": "3.10.21",
+    "platform": "Windows-10-10.0.26100-SP0",
+    "merged_seed_cache": true
   }
 }

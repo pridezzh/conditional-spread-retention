@@ -44,9 +44,10 @@ kNN 测量时的修正项（同样是解析的）
 --------------------------------------------------------------------
 用等权 kNN 去**测** ρ 时，预测 $\\frac1k\\sum_{i\\in N_k}x_1^{(i)}$ 的方差有两块：
   * 来自 α 分支：$\\approx α T(x_0,c)$，随 $x_0$ 变化，方差 $= α^2\\,\\mathrm{trVar}(x_1|c)$；
-  * 来自 (1-α) 分支：k 个 iid 抽样的均值，方差 $=(1-\\alpha)^2\\,\\mathrm{trVar}(x_1|c)/k$。
+  * 条件残差：由全方差公式，其平均方差为
+    $(1-\\alpha^2)\\,\\mathrm{trVar}(x_1|c)$；k 个局部响应取均值后除以 k。
 
-    ⟹ **ρ̂_kNN(α) ≈ α² + (1-α)²/k**
+    ⟹ **ρ̂_kNN(α) ≈ α² + (1-α²)/k**
 
 α=0 时退化为已知的 $1/k$ 律；α=1 时预测 $\\approx1$。两项都检验。
 
@@ -56,7 +57,7 @@ kNN 测量时的修正项（同样是解析的）
   P2 ρ̂(0) < 0.10，ρ̂(1) > 0.85
   P3 **|D̂(α) − D̂(0)| < 0.02**（数据边缘分布相同）
   P4 **|Λ̂(α) − Λ̂(0)| < 0.05**（同上）
-  P5 ρ̂ 与解析预测 α²+(1-α)²/k 的平均绝对差 < 0.08
+  P5 ρ̂ 与解析预测 α²+(1-α²)/k 的平均绝对差 < 0.08
 """
 import json
 import os
@@ -95,6 +96,15 @@ MODE_TOL = 0.6
 CRIT = dict(P2_RHO0_MAX=0.10, P2_RHO1_MIN=0.85,
             P3_D_MAX_DIFF=0.02, P4_LAM_MAX_DIFF=0.05,
             P5_PRED_MAD_MAX=0.08)
+
+
+def knn_variance_ratio(alpha, k):
+    """理想局部邻域下 kNN 条件均值估计量的方差比。
+
+    Var(E[Y|X]) / Var(Y) = alpha**2；剩余条件方差比例是
+    1-alpha**2，而不是 (1-alpha)**2。
+    """
+    return alpha ** 2 + (1.0 - alpha ** 2) / k
 
 
 # ---------------------------------------------------------------- 几何与精确速度场
@@ -230,7 +240,7 @@ def main():
     print("=" * 78)
     print("不可能性定理的构造性验证：ρ*(α) = α² 扫描 [0,1]，数据分布不动")
     print("  判据（预先写死）：%s" % json.dumps(CRIT, ensure_ascii=False))
-    print("  kNN 解析修正预测：ρ̂(α) ≈ α² + (1-α)²/k")
+    print("  kNN 解析修正预测：ρ̂(α) ≈ α² + (1-α²)/k")
     print("=" * 78)
 
     all_rows = {}
@@ -249,14 +259,14 @@ def main():
     print("\n" + "=" * 78)
     print("跨 %d 个种子汇总（k=%d）" % (len(SEEDS), KNN_K[0]))
     k0 = KNN_K[0]
-    print("  %-6s %-12s %-12s %-12s %-12s" % ("α", "ρ̂ 实测", "α² 理论", "α²+(1-α)²/k", "D̂ / Λ̂"))
+    print("  %-6s %-12s %-12s %-12s %-12s" % ("α", "ρ̂ 实测", "α² 理论", "α²+(1-α²)/k", "D̂ / Λ̂"))
     print("-" * 78)
     curve, pred_curve = [], []
     for a in ALPHAS:
         rho, _ = agg("rho", a, k0)
         D, _ = agg("D", a)
         lam, _ = agg("lam", a)
-        pred = a ** 2 + (1 - a) ** 2 / k0
+        pred = knn_variance_ratio(a, k0)
         curve.append(rho)
         pred_curve.append(pred)
         print("  %-6.2f %-12.4f %-12.4f %-12.4f %-12s"
@@ -286,7 +296,7 @@ def main():
           % (ddev, CRIT["P3_D_MAX_DIFF"], checks["P3_D_invariant"]))
     print("  P4 max|Λ̂(α)-Λ̂(0)| = %.5f (< %.3f) -> %s"
           % (ldev, CRIT["P4_LAM_MAX_DIFF"], checks["P4_Lambda_invariant"]))
-    print("  P5 与解析预测 α²+(1-α)²/k 的平均绝对差 = %.4f (< %.3f) -> %s"
+    print("  P5 与解析预测 α²+(1-α²)/k 的平均绝对差 = %.4f (< %.3f) -> %s"
           % (mad, CRIT["P5_PRED_MAD_MAX"], checks["P5_matches_analytic"]))
     verdict = "PASS" if all(checks.values()) else "FAIL"
     print("  VERDICT: %s     用时 %.0fs" % (verdict, time.time() - t0))

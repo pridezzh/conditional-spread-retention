@@ -359,5 +359,19 @@
         ]
       }
     }
+  },
+  "result_schema_version": "single-step-coupling-v3",
+  "provenance": {
+    "generated_at_utc": "2026-09-17T07:34:10.583919+00:00",
+    "generator": "code/experiments/run_loss_ladder.py",
+    "protocol_id": "3c8c60628120337e40a6859d7ff0f15bbeadde04448eebbbf7de348e455b065d",
+    "source_sha256": {
+      "code/experiments/run_loss_ladder.py": "a003b99bc9e07687a122838fe50386af4758b1f840683c6689f7f2877bc948ce",
+      "code/experiments/run_method_map.py": "af37b7abc3bc2767a466a7efac9c365c937b3877a2845b771845f49b26b0b553",
+      "code/src/provenance.py": "11e373a4f8c46e5298bc5afc4f33127b8bd50af15f007128cddc43be01324046"
+    },
+    "python": "3.10.21",
+    "platform": "Windows-10-10.0.26100-SP0",
+    "merged_seed_cache": true
   }
 }

@@ -1,7 +1,13 @@
-# code/ 目录说明
+# code/ Directory Guide
 
-本目录是论文《Whether One Step Is Enough Is Not Determined by the Data: Coupling,
-Loss Form, and an Impossibility Theorem》（ICLR 2027 投稿）的全部代码。
+本目录是论文《When Does One-Step Endpoint Regression Preserve Conditional Spread?
+Coupling, Mean Dependence, and Data-Side Non-Identifiability》（ICLR 2027 投稿）的全部代码。
+
+> **Note (English).** Code comments and this guide are written in Chinese;
+> `REPRODUCE.md` at the repository root is the English quickstart. Directory
+> names mirror the paper's structure: `experiments/` (Sec. 5), `analysis/`
+> (verification, macros, figures, audit), `src/` (shared library),
+> `tests/` (integrity guards), `archive/` (frozen legacy, not part of the pipeline).
 
 **产物不在本目录**：实验原始结果、图、运行日志都写在项目根的同名目录下
 （`../results`、`../figures`、`../logs`）。
@@ -21,8 +27,9 @@ code/
 │   │                           同时被下面两个脚本 import，勿移走
 │   ├── run_chamfer_supplement.py  表 1：第 7 族双向 Chamfer（**整批池化**指派）× 5 种子
 │   ├── run_loss_ladder.py      损失阶梯 L1 / L2b（逐条件 Chamfer）/ L3（逐条件平衡）× 5 种子
-│   └── run_chamfer_pooled.py   损失阶梯的池化对照 L2a（整批 argmin）× 5 种子
-│                               四个脚本都支持 `--seeds a,b --merge`（续跑、不重算已算种子）
+│   ├── run_chamfer_pooled.py   损失阶梯的池化对照 L2a（整批 argmin）× 5 种子
+│   └── run_mnist_collapse.py   MNIST 16×16 真实数据端点回归（四耦合 A/B/C/D，M1–M9 × 10 种子）
+│                               五个脚本都支持 `--seeds a,b --merge`（续跑、不重算已算种子）
 │
 ├── analysis/              ② 验证、汇总与检查
 │   ├── verify_multistep_theory.py     多步欧拉（闭式精确速度场）→ logs/*.json

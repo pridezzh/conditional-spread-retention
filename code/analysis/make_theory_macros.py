@@ -350,6 +350,56 @@ def main():
     else:
         B.missing.append("chamfer_pooled.json")
 
+    # ------------------------------------------------ MNIST 真实数据确认
+    mn = load(os.path.join("results", "mnist_collapse.json"))
+    if mn:
+        ms = mn["summary"]
+        key = {"A_independent": "A", "B_dependent_meandep0": "B", "C_ot": "C",
+               "D_sorted_meanmax": "D"}
+        for cfg, short in key.items():
+            if cfg not in ms:
+                continue
+            g = ms[cfg]
+            B.add("Mnist" + short + "Dcor", sigfigs(g["dcor"]["mean"]),
+                  "mnist_collapse: summary.%s.dcor.mean" % cfg)
+            B.add("Mnist" + short + "RhoTr", sigfigs(g["rho_trained"]["mean"]),
+                  "mnist_collapse: summary.%s.rho_trained.mean" % cfg)
+            B.add("Mnist" + short + "Csw", sigfigs(g["csw1"]["mean"]),
+                  "mnist_collapse: summary.%s.csw1.mean" % cfg)
+        B.add("MnistAMuErr", sigfigs(ms["A_independent"]["mu_err"]["mean"]),
+              "mnist_collapse: summary.A_independent.mu_err.mean")
+        B.add("MnistBMuErr", sigfigs(ms["B_dependent_meandep0"]["mu_err"]["mean"]),
+              "mnist_collapse: summary.B_dependent_meandep0.mu_err.mean")
+        B.add("MnistNSeeds", len(mn.get("per_seed", {})),
+              "mnist_collapse: len(per_seed)")
+        # 跨种子离散度：报告量（rho_trained/csw1/dcor）里最大的标准差及其归属
+        best = None
+        for cfg in ("A_independent", "B_dependent_meandep0", "C_ot",
+                    "D_sorted_meanmax"):
+            if cfg not in ms:
+                continue
+            for k in ("rho_trained", "csw1", "dcor"):
+                sd = ms[cfg].get(k, {}).get("std")
+                if isinstance(sd, (int, float)) and (best is None or sd > best[0]):
+                    best = (sd, "%s.%s" % (cfg, k))
+        if best:
+            B.add("MnistMaxStd", sigfigs(best[0]),
+                  "mnist_collapse: max summary std over rho_trained/csw1/dcor")
+            # LaTeX 文本模式禁裸 _ 与裸 .：把 "A_independent.dcor" 转成可排版形式
+            B.add("MnistMaxStdOf", best[1].replace("_", "-").replace(".", ", "),
+                  "mnist_collapse: which quantity has the max std")
+        # 训练耗时（逐种子 seconds 的均值）：D 排序配对 vs C 匈牙利指派
+        for cfg, short in (("C_ot", "C"), ("D_sorted_meanmax", "D")):
+            if not mn.get("per_seed"):
+                continue
+            secs = [d[cfg]["seconds"] for d in mn["per_seed"].values()
+                    if cfg in d and isinstance(d[cfg].get("seconds"), (int, float))]
+            if secs:
+                B.add("Mnist" + short + "Seconds", sigfigs(sum(secs) / len(secs), 3),
+                      "mnist_collapse: mean per-seed seconds of %s" % cfg)
+    else:
+        B.missing.append("mnist_collapse.json")
+
     # ------------------------------------------------ Λ 负面结果
     vd = load(os.path.join("logs", "validate_deficit.json"))
     if vd:

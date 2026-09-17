@@ -17,7 +17,7 @@ verify_*/validate_* 脚本。
 "哪个才是真流水线"变模糊，故按新依赖重排。旧脚本仍留在 `code/analysis/`
 与 `code/archive/` 作为历史。
 
-默认用 E:/anaconda 的 python（managed python 没装 numpy/matplotlib）。
+默认用当前解释器（sys.executable）；可用环境变量 PIPELINE_PY 覆盖。
 日志写到项目根 logs/pipeline.log。
 """
 import os
@@ -41,7 +41,7 @@ ROOT = _find_root(_HERE)
 LOGDIR = os.path.join(ROOT, "logs")
 os.makedirs(LOGDIR, exist_ok=True)
 
-PY = os.environ.get("PIPELINE_PY", r"E:\anaconda\python.exe")
+PY = os.environ.get("PIPELINE_PY", sys.executable)
 
 # (步骤名, [相对 code/ 的脚本路径, 额外参数...])
 STEPS = [
