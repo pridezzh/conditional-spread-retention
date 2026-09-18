@@ -3,7 +3,9 @@
 > **Current evidence status:** the shipped five-seed training JSON files predate the
 > provenance schema and combine cached seeds `0,1,2` with rerun seeds `3,4`. Level 1
 > checks deterministic assembly and numerical consistency only. A submission-grade
-> reproduction requires Level 2 without `--merge`, followed by the strict audit.
+> reproduction requires Level 2 without `--merge`, followed by the strict audit — the
+> audit also verifies the manuscript's page budget, so it runs in the authoring tree
+> rather than here.
 
 Two levels: **verify the shipped results** (minutes), and **re-run everything from
 scratch** (~2 h CPU).
@@ -42,7 +44,7 @@ compile the PDF — are out of scope here; the stages that produce `results/`, `
 | 4 | `code/analysis/check_macros.py --strict` | every referenced macro exists; no macro name contains a digit |
 | 5 | `code/analysis/build_paper.py --clean` | `pdflatex → bibtex → pdflatex ×2`, then reports errors |
 
-Success criteria (all must hold):
+Success criteria for the full five-step pipeline in the authoring tree (all must hold):
 
 ```
 hard errors    : 0
