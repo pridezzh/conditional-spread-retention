@@ -11042,10 +11042,10 @@
   "provenance": {
     "generated_at_utc": "2026-09-17T12:33:08.445672+00:00",
     "generator": "code/experiments/run_mnist_collapse.py",
-    "protocol_id": "e2d93c9636262dcb219515a723dfca6bb34e718c092d4a3396dd01832d27d7b3",
+    "protocol_id": "d9ec82eed6a967fa1d6d959083eeb69aad426519c8d675e74ac076a402266e72",
     "source_sha256": {
-      "code/experiments/run_mnist_collapse.py": "97d237592cf03103feaae4c4515ffdf79f075e3c20448e222fbd47a6b0b039a7",
-      "code/src/provenance.py": "11e373a4f8c46e5298bc5afc4f33127b8bd50af15f007128cddc43be01324046"
+      "code/experiments/run_mnist_collapse.py": "33b1aba334c87e30296f5e3e4146fbb14c92dcee2fd18b2a0a12f18002597ee7",
+      "code/src/provenance.py": "ec7581ff452b0d85da9e650f08ca201e208657a4fdf5cb976fc4b3a881d9820e"
     },
     "python": "3.10.21",
     "platform": "Windows-10-10.0.26100-SP0",

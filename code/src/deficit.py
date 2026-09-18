@@ -57,8 +57,8 @@ Properties:
   * Lam ∈ [0, ~1], **scale-invariant**;
   * Lam = 0 iff p(·|c) is Gaussian on **every** 1-D projection;
   * No null hypothesis, no p-value, no FPR/TPR — it is an index that can be read
-    directly, so the pre-registered veto line in the audit report that targeted the
-    "multimodality test" **no longer applies**.
+    directly, so the pre-registered veto line that targeted a "multimodality test"
+    **no longer applies** — Lambda is an index, not a test.
 
 Why W2 instead of CH / chi-square-type statistics:
     W2 is a **transport distance**: it asks "how far must mass be moved", and its

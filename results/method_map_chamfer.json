@@ -115,11 +115,11 @@
   "provenance": {
     "generated_at_utc": "2026-09-17T08:25:30.933228+00:00",
     "generator": "code/experiments/run_chamfer_supplement.py",
-    "protocol_id": "21d8934b29a3da1c70369c26dfcb73356654c0c9a8a36421135dee937c27ee9e",
+    "protocol_id": "332eda7a9fea33c9f77bc51ddf18b72de0b1cc07eb3b3e3b56ba133b99d05368",
     "source_sha256": {
-      "code/experiments/run_chamfer_supplement.py": "3d22dd8013355202c47d07f05264b728c0dc271fb2f04f4e08e58d81d0d28829",
-      "code/experiments/run_method_map.py": "af37b7abc3bc2767a466a7efac9c365c937b3877a2845b771845f49b26b0b553",
-      "code/src/provenance.py": "11e373a4f8c46e5298bc5afc4f33127b8bd50af15f007128cddc43be01324046"
+      "code/experiments/run_chamfer_supplement.py": "de45521296392f5122323bfc6ef4e5ec36102eca9ff56bd7efc5d787220d6340",
+      "code/experiments/run_method_map.py": "3a2a84edb186d0391a453a3ec02228f0b497969c0c898a0ff16e4ca3e9565818",
+      "code/src/provenance.py": "ec7581ff452b0d85da9e650f08ca201e208657a4fdf5cb976fc4b3a881d9820e"
     },
     "python": "3.10.21",
     "platform": "Windows-10-10.0.26100-SP0",

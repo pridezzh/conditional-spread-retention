@@ -135,12 +135,12 @@
   "provenance": {
     "generated_at_utc": "2026-09-17T07:43:37.269193+00:00",
     "generator": "code/experiments/run_chamfer_pooled.py",
-    "protocol_id": "7a47b9859b9b38010cc58e75c6bd9fa04e53e5894295ee80727d1404acda63d4",
+    "protocol_id": "4ecfce6281d7b6c03cbf5bb558b96ceecda124e3dfc563a6a3afcf9ad3ae1b25",
     "source_sha256": {
-      "code/experiments/run_chamfer_pooled.py": "51c9b6a2fc89c533bfbfb0185900d0f0cfc4f1dbff075779c6556145325c11af",
-      "code/experiments/run_loss_ladder.py": "a003b99bc9e07687a122838fe50386af4758b1f840683c6689f7f2877bc948ce",
-      "code/experiments/run_method_map.py": "af37b7abc3bc2767a466a7efac9c365c937b3877a2845b771845f49b26b0b553",
-      "code/src/provenance.py": "11e373a4f8c46e5298bc5afc4f33127b8bd50af15f007128cddc43be01324046"
+      "code/experiments/run_chamfer_pooled.py": "4415d778674a89c3c034372e549c9b570939add4f50938c39726d6ede2527547",
+      "code/experiments/run_loss_ladder.py": "9b5ebafc94493b02bbe6511fa03d686395f00315175ca0e5eaf1c1cf4beb5706",
+      "code/experiments/run_method_map.py": "3a2a84edb186d0391a453a3ec02228f0b497969c0c898a0ff16e4ca3e9565818",
+      "code/src/provenance.py": "ec7581ff452b0d85da9e650f08ca201e208657a4fdf5cb976fc4b3a881d9820e"
     },
     "python": "3.10.21",
     "platform": "Windows-10-10.0.26100-SP0",

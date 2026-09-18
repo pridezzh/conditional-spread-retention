@@ -72,7 +72,7 @@ import time
 # Windows/Anaconda: numpy and torch each bundle their own copy of libiomp5md.dll; a
 # duplicate initialization crashes the process **mid-training** with exit code 3
 # (OMP: Error #15). This must be set **before** importing numpy/torch. Previously
-# only code/_run_pipeline.py set it for child processes; running this script
+# the pipeline entry point set it for child processes; running this script
 # directly would crash.
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
@@ -80,7 +80,7 @@ os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 def _find_root(d):
     d = os.path.abspath(d)
     while True:
-        if os.path.isdir(os.path.join(d, "code")) and os.path.isdir(os.path.join(d, "paper")):
+        if os.path.isdir(os.path.join(d, "code")) and os.path.isdir(os.path.join(d, "results")):
             return d
         p = os.path.dirname(d)
         if p == d:

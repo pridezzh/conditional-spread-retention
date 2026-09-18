@@ -20,7 +20,7 @@ import sys
 ROOT = None
 d = os.path.dirname(os.path.abspath(__file__))
 while d != os.path.dirname(d):
-    if os.path.isdir(os.path.join(d, "code")) and os.path.isdir(os.path.join(d, "paper")):
+    if os.path.isdir(os.path.join(d, "code")) and os.path.isdir(os.path.join(d, "results")):
         ROOT = d
         break
     d = os.path.dirname(d)

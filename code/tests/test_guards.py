@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Minimal regression tests for the issues found during the scientific audit."""
+"""Minimal regression tests for the estimator and metric behaviour the analysis relies on."""
 import os
 import json
 import sys
@@ -18,7 +18,7 @@ from provenance import (RESULT_SCHEMA_VERSION, protocol_fingerprint,
                         require_merge_compatible)  # noqa: E402
 
 
-class DiscriminantAuditTests(unittest.TestCase):
+class DiscriminantGuards(unittest.TestCase):
     def test_marginal_separation_is_dimension_invariant_under_feature_duplication(self):
         """Repeating the same coordinate should not inflate the separation via an extra dimension."""
         rng = np.random.default_rng(4)
@@ -48,7 +48,7 @@ class DiscriminantAuditTests(unittest.TestCase):
         self.assertEqual(_select_K(x, kmax=5, seed=12, n_null=49), 1)
 
 
-class ConditionalMetricAuditTests(unittest.TestCase):
+class ConditionalMetricGuards(unittest.TestCase):
     def test_constant_condition_uses_marginal_reference_without_label_input(self):
         """The unconditional setting should draw the whole marginal and exclude the query sample itself."""
         c = np.zeros((100, 1))

@@ -2,10 +2,9 @@
 """Minimally falsifiable experiment: a false-positive stress test for Lambda on
 "non-Gaussian unimodal" distributions.
 
-Corresponds to item 1 of the audit report P1, and clause 2 of the
-"veto conditions that must be pre-registered":
-    the claim that multi-modal separation statistics have excessive false
-    positives on heavy-tailed / curved unimodal distributions.
+Tests one of the pre-registered veto conditions for the deficit index Lambda:
+that multi-modal separation statistics have excessive false positives on
+heavy-tailed / curved unimodal distributions.
 
 Why this must be done first
 ---------------------------
@@ -46,10 +45,10 @@ import time
 
 
 def _find_root(d):
-    """Self-healing anchor: walk up until a level containing both code/ and paper/."""
+    """Self-healing anchor: walk up until a level containing both code/ and results/."""
     d = os.path.abspath(d)
     while True:
-        if os.path.isdir(os.path.join(d, "code")) and os.path.isdir(os.path.join(d, "paper")):
+        if os.path.isdir(os.path.join(d, "code")) and os.path.isdir(os.path.join(d, "results")):
             return d
         parent = os.path.dirname(d)
         if parent == d:

@@ -800,10 +800,10 @@
   "provenance": {
     "generated_at_utc": "2026-09-17T08:09:48.029120+00:00",
     "generator": "code/experiments/run_method_map.py",
-    "protocol_id": "b20a3335a562f50e53ba53abc2fae0eb3cdd539fad237b80bed2aee1f2ea9bb4",
+    "protocol_id": "dd2a5830db593fa8274d062571c6c6664b26ed6757c52b87a358b47ca69fef7a",
     "source_sha256": {
-      "code/experiments/run_method_map.py": "af37b7abc3bc2767a466a7efac9c365c937b3877a2845b771845f49b26b0b553",
-      "code/src/provenance.py": "11e373a4f8c46e5298bc5afc4f33127b8bd50af15f007128cddc43be01324046"
+      "code/experiments/run_method_map.py": "3a2a84edb186d0391a453a3ec02228f0b497969c0c898a0ff16e4ca3e9565818",
+      "code/src/provenance.py": "ec7581ff452b0d85da9e650f08ca201e208657a4fdf5cb976fc4b3a881d9820e"
     },
     "python": "3.10.21",
     "platform": "Windows-10-10.0.26100-SP0",

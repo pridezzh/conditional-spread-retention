@@ -56,7 +56,7 @@ import sys
 def _find_root(d):
     d = os.path.abspath(d)
     while True:
-        if os.path.isdir(os.path.join(d, "code")) and os.path.isdir(os.path.join(d, "paper")):
+        if os.path.isdir(os.path.join(d, "code")) and os.path.isdir(os.path.join(d, "results")):
             return d
         parent = os.path.dirname(d)
         if parent == d:

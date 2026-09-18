@@ -1,7 +1,7 @@
 # When Does One-Step Endpoint Regression Preserve Conditional Spread?
 
-Code, data, and results to reproduce all experiments in the accompanying study of
-one-step generative-policy failure boundaries under **conditional mean dependence**.
+Code, data, and results for the accompanying study of one-step generative-policy
+failure boundaries under **conditional mean dependence**.
 
 The paper studies when a single-step endpoint regression `f*(x0, c) = E[x1 | x0, c]`
 preserves the conditional spread of the target. It proves an impossibility theorem
@@ -9,6 +9,10 @@ preserves the conditional spread of the target. It proves an impossibility theor
 sweeping all of `[0,1]`), gives a `k`NN estimator with an analytic `1/k` bias law, and
 confirms the predicted collapse/escape ladder on synthetic families plus a real-image
 MNIST 16x16 endpoint study.
+
+**This repository is the reproduction payload**: the training runs, the verification
+suite, the released per-run results, and the figures they produce. The manuscript is
+submitted separately and is not part of this repository.
 
 ---
 
@@ -18,37 +22,34 @@ MNIST 16x16 endpoint study.
 |---|---|
 | Python | 3.10+ (tested on 3.13) |
 | Packages | `numpy>=1.26`, `scipy>=1.11`, `torch>=2.2` (CPU build), `matplotlib>=3.8` |
-| TeX | any TeX Live with `pdflatex` + `bibtex` (only needed to compile the PDF) |
 | Hardware | CPU only; no GPU required or used |
 
 ```bash
 pip install -r requirements.txt
 ```
 
+> **Windows:** if you hit `OMP: Error #15`, set `KMP_DUPLICATE_LIB_OK=TRUE` before
+> importing numpy/torch.
+
 ---
 
-## Quick start: rebuild the paper from shipped results
-
-This regenerates the number macros, both figures, runs the format checks, and compiles
-the PDF — without training anything.
+## Quick start
 
 ```bash
-python code/_run_pipeline.py
+python -m unittest discover -s code/tests        # 10 regression guards
+python code/analysis/verify_minimax.py           # each verify_*.py asserts its prediction
+python code/analysis/make_fig_ladder.py          # regenerates figures/fig_loss_ladder.pdf
 ```
 
-The build reports `PIPELINE OK` on success. A TeX distribution must be on `PATH`; edit
-`TEXLIVE` at the top of `code/analysis/build_paper.py` if yours is elsewhere.
-
-> **Windows:** if you hit `OMP: Error #15`, set `KMP_DUPLICATE_LIB_OK=TRUE` before
-> importing numpy/torch. `_run_pipeline.py` sets this for its child processes already.
+Every `verify_*.py` checks an analytic prediction of the theory and exits non-zero if
+the prediction fails, so the suite is self-checking.
 
 ---
 
 ## Full reproduction from scratch
 
-See **[REPRODUCE.md](REPRODUCE.md)** for step-by-step instructions to re-run every
-experiment and verification (~2 hours CPU), the claim-to-artefact map, and expected
-outputs.
+See **[REPRODUCE.md](REPRODUCE.md)** for the step-by-step order (~2 hours CPU), the
+claim-to-artefact map, and the expected outputs.
 
 ```bash
 # experiments -> results/*.json
@@ -56,18 +57,20 @@ python code/experiments/run_method_map.py
 python code/experiments/run_loss_ladder.py
 python code/experiments/run_chamfer_pooled.py
 python code/experiments/run_chamfer_supplement.py
+python code/experiments/run_mnist_collapse.py
 
 # verifications -> logs/*.json
-python code/analysis/verify_*.py
+python code/analysis/verify_multistep_theory.py
+python code/analysis/verify_conditional_theory.py
+python code/analysis/verify_coupling_theory.py
+python code/analysis/verify_impossibility.py
+python code/analysis/verify_minimax.py
 python code/analysis/validate_deficit.py
 python code/analysis/run_falsification.py
 
-# regression guards
-python -m unittest discover -s code/tests  # 10 regression guards
-
-# manuscript-tree only -- the manuscript is not shipped in this repository:
-#   python code/_run_pipeline.py                 # macros -> figures -> PDF
-#   python code/analysis/audit_submission.py     # must end in VERDICT: PASS
+# figures -> figures/*.pdf
+python code/analysis/make_fig_impossibility.py
+python code/analysis/make_fig_ladder.py
 ```
 
 ---
@@ -77,42 +80,43 @@ python -m unittest discover -s code/tests  # 10 regression guards
 ```
 .
 ├── README.md                this file
-├── LICENSE                  MIT (code); manuscript text shared with attribution
+├── LICENSE                  MIT (code and released results)
 ├── CITATION.cff             citation metadata
 ├── REPRODUCE.md             full reproduction guide
 ├── requirements.txt         Python dependencies
 │
-(the manuscript, its bibliography and the ICLR 2027 style files are submitted
-separately via OpenReview and are deliberately **not** part of this repository)
-
 ├── code/
-│   ├── _run_pipeline.py     entry point: macros -> figures -> checks -> PDF
-│   ├── experiments/         training runs  -> results/*.json
-│   ├── analysis/            verifications, macro/figure generation, compile checks
+│   ├── experiments/         training runs      -> results/*.json
+│   ├── analysis/            verification suite and figure generators -> logs/*.json, figures/
 │   ├── src/                 shared library (discriminant, metrics, provenance, ...)
 │   ├── tests/               regression guards
-│   └── data/                mnist_16.npz (preprocessed MNIST cache; ships with repo)
+│   └── data/                mnist_16.npz (preprocessed MNIST cache; ships with the repo)
 │
 ├── results/                 experiment output (5 JSON files; what the paper cites)
-├── logs/                    verification results (7 JSON files; feed the macros)
+├── logs/                    verification output (7 JSON files)
 └── figures/                 fig_impossibility.pdf, fig_loss_ladder.pdf
 ```
 
-Compiled PDFs, text process logs (`logs/*.log`), figure PNGs, and superseded
-scripts are **not shipped** — they are regenerated locally. The manuscript source
-is submitted separately; see `REPRODUCE.md` for what this package does and does
-not cover.
+Figure PNGs and text run logs (`logs/*.log`) are not shipped; they are regenerated
+locally.
 
 ---
 
-## How numbers are traced
+## How the results are traced
 
-No statistic in the paper is hand-copied. Every value is a LaTeX macro in the
-manuscript's `numbers_theory.tex`, generated by `code/analysis/make_theory_macros.py`
-from `results/*.json` and `logs/*.json`. Each macro line ends with a comment naming its
-source file and field. To change a number: re-run the relevant experiment or
-verification, then `python code/_run_pipeline.py`. Never edit `numbers_theory.tex`
-by hand — it is overwritten.
+No released number is hand-copied. Each `results/*.json` and `logs/*.json` is written by
+the script named in its `provenance.generator` field, and carries:
+
+- `result_schema_version` — the artefact schema,
+- `provenance.protocol_id` and `provenance.source_sha256` — a SHA-256 fingerprint of the
+  protocol files that produced it,
+- for training runs, a `per_seed` block so every aggregate can be recomputed from the
+  individual seeds.
+
+Because the fingerprint covers the generating scripts, merging seeds produced by a
+different code revision is rejected: all reported seeds come from one code revision.
+
+To change a number, re-run the corresponding experiment or verification.
 
 ---
 
@@ -124,5 +128,5 @@ If you use this code, please cite using the metadata in [`CITATION.cff`](CITATIO
 
 ## License
 
-- **Code:** MIT — see [`LICENSE`](LICENSE).
-- **Manuscript text and figures:** reuse with attribution.
+- **Code and released results:** MIT — see [`LICENSE`](LICENSE).
+- **Figures:** reuse with attribution.

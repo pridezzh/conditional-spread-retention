@@ -7,8 +7,8 @@ From "insufficient information" to "exactly 1/2"
 --------------------------------------------------------------------
 `verify_impossibility.py` only proved the qualitative version: rho* sweeps [0,1] while
 the data distribution stays fixed, so a pure-data quantity has "insufficient information".
-But "insufficient information" is a soft claim; a reviewer can press: **how insufficient,
-exactly?** This script turns it into a **citable number**.
+That statement is qualitative: it says the data cannot determine rho* but not by how much.
+This script turns the gap into a **citable number**.
 
 [Theorem (minimax form)] Let Pi = {pi_alpha : alpha in [0,1]} be the alpha-interpolation
 coupling family, all members inducing the same marginal law p(c,x_1). Let A be **any**
@@ -73,7 +73,7 @@ import time
 def _find_root(d):
     d = os.path.abspath(d)
     while True:
-        if os.path.isdir(os.path.join(d, "code")) and os.path.isdir(os.path.join(d, "paper")):
+        if os.path.isdir(os.path.join(d, "code")) and os.path.isdir(os.path.join(d, "results")):
             return d
         p = os.path.dirname(d)
         if p == d:

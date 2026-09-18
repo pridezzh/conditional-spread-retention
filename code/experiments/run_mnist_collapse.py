@@ -87,7 +87,7 @@ os.environ.setdefault("OMP_NUM_THREADS", "8")
 def _find_root(d):
     d = os.path.abspath(d)
     while True:
-        if os.path.isdir(os.path.join(d, "code")) and os.path.isdir(os.path.join(d, "paper")):
+        if os.path.isdir(os.path.join(d, "code")) and os.path.isdir(os.path.join(d, "results")):
             return d
         p = os.path.dirname(d)
         if p == d:
