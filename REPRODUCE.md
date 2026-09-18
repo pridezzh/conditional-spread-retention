@@ -20,6 +20,18 @@ python code/analysis/audit_submission.py --allow-legacy-results
 
 `_run_pipeline.py` runs five steps in order and stops at the first failure:
 
+## Scope of this package
+
+This repository is the **reproduction payload for the experiments and results**: the
+training runs, the verification suite, the released result files, and the figures they
+produce. The **manuscript and the ICLR 2027 style files are submitted separately** via
+OpenReview and are deliberately not part of this repository. Consequently the final
+stages of the one-shot pipeline — which emit the manuscript's `numbers_theory.tex` and
+compile the PDF — are out of scope here; the stages that produce `results/`, `logs/` and
+`figures/` are fully covered.
+
+## Pipeline
+
 | step | script | what it does |
 |---|---|---|
 | 1 | `code/analysis/make_theory_macros.py` | `results/*.json` + `logs/*.json` → `paper/numbers_theory.tex` |
@@ -108,7 +120,7 @@ all ten seeds always come from one frozen code revision.
 | Packages | `numpy>=1.26`, `scipy>=1.11`, `torch>=2.2` (CPU), `matplotlib>=3.8` |
 | TeX | any TeX Live with `pdflatex` + `bibtex`; edit `TEXLIVE` in `code/analysis/build_paper.py` if yours is elsewhere |
 | Hardware | CPU only; no GPU required or used |
-| Network | only for `paper/fetch_refs.py` (arXiv metadata) and the one-time MNIST download in `code/src/tasks.py` (falls back to scikit-learn digits offline). |
+| Network | only for the one-time MNIST download in `code/src/tasks.py` (falls back to scikit-learn digits offline). |
 
 `code/data/mnist_16.npz` is the preprocessed 16x16 MNIST cache used by
 `experiments/run_mnist_collapse.py`; it ships with the repository so the real-data
@@ -118,10 +130,8 @@ experiment reproduces offline.
 
 ## Regenerating the bibliography
 
-```bash
-python paper/fetch_refs.py     # arXiv -> paper/refs_raw.json  (needs network; retries + cache merge)
-python paper/make_bib.py       # refs_raw.json -> paper/references.bib
-```
+The bibliography regeneration scripts live in the manuscript tree and are not
+shipped here.
 
 `fetch_refs.py` reads `<meta name="citation_*">` from `arxiv.org/abs/<id>` pages. The
 arXiv API and OpenAlex were both rate-limited from the machine this was developed on,
@@ -135,7 +145,7 @@ into the existing cache so a throttled run does not lose entries.
 | Symptom | Cause / fix |
 |---|---|
 | `OMP: Error #15 ... libiomp5md.dll already initialized` | set `KMP_DUPLICATE_LIB_OK=TRUE` |
-| `File 'iclr2027_conference.sty' not found` | compile through `build_paper.py`; it sets `TEXINPUTS=./iclr2027;` and `BSTINPUTS=./iclr2027;` relative to `paper/` |
+| `File 'iclr2027_conference.sty' not found` | manuscript-tree only: compile through `build_paper.py`, which sets `TEXINPUTS=./iclr2027;` and `BSTINPUTS=./iclr2027;` relative to `paper/` |
 | TeX cannot open files although the paths exist | `TEXINPUTS` must be **relative and use forward slashes**; an absolute path containing non-ASCII characters breaks `\openin` |
 | `Missing $ inserted` | a macro expanded to scientific notation (e.g. `4.41\times 10^{-5}`) used outside math mode; wrap it as `$\Macro$` |
 | `UnicodeDecodeError` on a log file | PowerShell's `*>` redirect writes UTF-16; re-encode or read with the right codec |

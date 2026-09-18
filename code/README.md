@@ -43,11 +43,12 @@ code/
 │   ├── validate_deficit.py            estimator and discriminative power of the sliced-W₂ Gaussian deficit Λ (incl. the R6 negative result)
 │   ├── run_falsification.py           pre-registered refutation experiment for Λ (false-positive rate)
 │   ├── margin_vs_noise.py             computes the "margin / seed-noise" ratio for each criterion (evidence-strength audit §2.4)
-│   ├── make_theory_macros.py          logs/ + results/ → ../paper/numbers_theory.tex
+│   ├── make_theory_macros.py          logs/ + results/ → the manuscript's ../paper/numbers_theory.tex
 │   ├── make_fig_impossibility.py      → ../figures/fig_impossibility.pdf (paper Figure 1)
 │   ├── make_fig_ladder.py             → ../figures/fig_loss_ladder.pdf (paper Figure 2)
 │   ├── check_macros.py                pre-build: missing macros / illegal macro names / dead macros (--strict for pipeline use)
 │   └── build_paper.py                 four-pass build + error summary (page count / overfull / undefined references)
+│                                      (manuscript-tree only: needs ../paper/, not shipped in this repo)
 │
 ├── src/                   ③ library
 │   ├── deficit.py          **in use**: sliced-W₂ Gaussian deficit Λ (pure numpy, includes Acklam's inverse-normal CDF)
