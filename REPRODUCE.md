@@ -5,20 +5,22 @@
 > checks deterministic assembly and numerical consistency only. A submission-grade
 > reproduction requires Level 2 without `--merge`, followed by the strict audit.
 
-Two levels: **rebuild the PDF from shipped results** (seconds), and **re-run everything
-from scratch** (~2 h CPU).
+Two levels: **verify the shipped results** (minutes), and **re-run everything from
+scratch** (~2 h CPU).
 
 ---
 
-## Level 1 — rebuild the paper from the shipped results
+## Level 1 — verify the shipped results
 
 ```bash
 python -m pip install -r requirements.txt
-python code/_run_pipeline.py
-python code/analysis/audit_submission.py --allow-legacy-results
+python -m unittest discover -s code/tests    # 10 regression guards
+python code/analysis/verify_minimax.py       # each verify_*.py asserts internally
 ```
 
-`_run_pipeline.py` runs five steps in order and stops at the first failure:
+`_run_pipeline.py` runs five steps in order and stops at the first failure. Steps 4 and 5
+(`check_macros.py`, `build_paper.py`) read the manuscript, so the pipeline cannot reach
+`PIPELINE OK` outside the authoring tree; run the stages you need individually instead.
 
 ## Scope of this package
 
@@ -76,9 +78,16 @@ python code/analysis/verify_minimax.py
 python code/analysis/validate_deficit.py
 python code/analysis/run_falsification.py
 
-python code/_run_pipeline.py                        # rebuild macros, figures, PDF
-python code/analysis/audit_submission.py             # must end in VERDICT: PASS
+python code/analysis/make_fig_impossibility.py      # figures -> figures/*.pdf (no manuscript needed)
+python code/analysis/make_fig_ladder.py
+
+# manuscript-tree only, hence not runnable here: make_theory_macros.py, check_macros.py,
+# build_paper.py, and the page-limit check inside audit_submission.py
 ```
+
+Level 2 is satisfied when every `verify_*.py` / `validate_deficit.py` / `run_falsification.py`
+exits zero (they assert their own analytic predictions) and the regenerated
+`results/*.json` agree with the shipped values to floating-point tolerance.
 
 Run the experiment commands **without `--merge`** so every seed is regenerated from one
 revision. New outputs include a schema version, generator, timestamp and SHA-256 protocol

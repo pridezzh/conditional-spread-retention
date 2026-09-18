@@ -62,10 +62,12 @@ python code/analysis/verify_*.py
 python code/analysis/validate_deficit.py
 python code/analysis/run_falsification.py
 
-# assemble + compile + audit
-python code/_run_pipeline.py
-python code/analysis/audit_submission.py   # must end in VERDICT: PASS
+# regression guards
 python -m unittest discover -s code/tests  # 10 regression guards
+
+# manuscript-tree only -- the manuscript is not shipped in this repository:
+#   python code/_run_pipeline.py                 # macros -> figures -> PDF
+#   python code/analysis/audit_submission.py     # must end in VERDICT: PASS
 ```
 
 ---
